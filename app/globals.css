@@ -1,26 +1,83 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-roboto: var(--font-roboto);
+  --color-correct: #98c379;
+  --color-incorrect: #e06c75;
+  --color-extra: #e06c75;
+  --color-caret: #e2b714;
+  --color-sub: #646566;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-roboto), var(--font-geist-sans), sans-serif;
+}
+
+#test {
+  max-width: 1000px;
+  width: 100%;
+  user-select: none;
+}
+
+#test .word {
+  display: inline-flex;
+  margin: 0.3rem 0.5rem 0.3rem 0;
+  padding: 0.25rem 0.25rem;
+  border-radius: 4px;
+  line-height: 1.5rem;
+}
+
+#test .letter {
+  position: relative;
+  padding: 0.125rem 0;
+  border-left: 2px solid transparent;
+  transition: color 0.05s, border-color 0.05s;
+  margin-left: -1px;
+}
+
+#test .letter.active {
+  border-left-color: var(--color-caret);
+}
+
+#test .letter.correct {
+  color: var(--color-correct);
+}
+
+#test .letter.incorrect {
+  color: var(--color-incorrect);
+}
+
+#test .letter.extra {
+  color: var(--color-extra);
+}
+
+#result .stat {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 1.5rem;
+}
+
+#result .stat .stat-value {
+  font-size: 3rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+#result .stat .stat-label {
+  font-size: 0.875rem;
+  color: var(--sub-color);
+  margin-top: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+#configModal {
+  backdrop-filter: blur(4px);
 }
