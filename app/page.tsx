@@ -574,6 +574,14 @@ export default function Home() {
 
       {/* 3. BOTTOM STATS */}
       <div className="w-full px-6 md:px-[8vw] pb-6">
+
+        {/* KEYBOARD HINTS (exactly like monkeytype) */}
+        <div className="flex flex-col items-center gap-2 mb-8 text-xs text-[#646566]">
+          <div className="flex items-center gap-2">
+            <kbd className="key-hint">escape</kbd>
+            <span>- restart test</span>
+          </div>
+        </div>
         <div className="flex justify-between items-center mt-6 text-sm text-[#646566]">
           <div>
             {isTestActive && !isPaused && mode === "time" && (

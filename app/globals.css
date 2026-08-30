@@ -174,3 +174,16 @@ input[type="number"] {
     filter: blur(0);
   }
 }
+
+/* --- KEYBOARD HINT STYLES (like monkeytype's <key> chips) --- */
+.key-hint {
+  display: inline-block;
+  background-color: #3c3e41;
+  /* slightly lighter than the page bg */
+  color: var(--color-sub);
+  border-radius: 0.25rem;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.7rem;
+  font-family: var(--font-mono);
+  line-height: 1.2;
+}
