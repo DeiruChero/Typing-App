@@ -162,12 +162,6 @@ export default function Home() {
     initTest();
   }, [mode, timeMode, wordMode, quoteMode, customTime, customWords, punctuation, numbers]);
 
-  useEffect(() => {
-    if (isTestActive && mode === "time" && !customTime) {
-      if (timer >= timeMode) finishTest();
-    }
-  }, [timer, isTestActive, mode, timeMode, customTime]);
-
   const finishTest = useCallback(() => {
     setIsTestActive(false);
     setIsTestFinished(true);
@@ -210,6 +204,15 @@ export default function Home() {
 
     setResult({ wpm, rawWpm, accuracy, characters: totalChars, correctChars, incorrectChars, extraChars, missedChars, time: timer });
   }, [timer, customTime, timeMode]);
+
+  useEffect(() => {
+    if (isTestActive && mode === "time") {
+      const targetTime = customTime ? parseInt(customTime) : timeMode;
+      if (!isNaN(targetTime) && targetTime > 0 && timer >= targetTime) {
+        finishTest();
+      }
+    }
+  }, [timer, isTestActive, mode, timeMode, customTime, finishTest]);
 
   const startTest = useCallback(() => {
     if (timerRef.current) return;
