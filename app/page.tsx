@@ -8,6 +8,13 @@ type Mode = "time" | "words" | "quote" | "zen" | "custom";
 const TIME_OPTIONS = [15, 30, 60, 120];
 const WORD_OPTIONS = [10, 25, 50, 100];
 const QUOTE_OPTIONS = ["short", "medium", "long", "all"];
+const MODE_ICONS: Record<Mode, string> = {
+  time: "far fa-clock",        // clock icon
+  words: "fas fa-font",        // "A" letter icon
+  quote: "fas fa-quote-left",  // " quote icon
+  zen: "fas fa-mountain",      // mountain icon
+  custom: "fas fa-wrench",     // wrench icon
+};
 
 export default function Home() {
   const [mode, setMode] = useState<Mode>("time");
@@ -424,11 +431,11 @@ export default function Home() {
             {/* LEFT: Punctuation & Numbers */}
             <div className="flex gap-6 items-center bg-[#2c2e31] rounded-lg px-6 py-3">
               <button onClick={() => setPunctuation(!punctuation)} className={`flex items-center gap-2 hover:text-[#d1d1d1] transition-colors ${punctuation ? "text-[#e2b714]" : ""}`} title="Toggle punctuation">
-                <span className="text-lg">@</span>
+                <i className="fas fa-at"></i>
                 <span className="hidden sm:inline">punctuation</span>
               </button>
               <button onClick={() => setNumbers(!numbers)} className={`flex items-center gap-2 hover:text-[#d1d1d1] transition-colors ${numbers ? "text-[#e2b714]" : ""}`} title="Toggle numbers">
-                <span className="text-lg">#</span>
+                <i className="fas fa-hashtag"></i>
                 <span className="hidden sm:inline">numbers</span>
               </button>
             </div>
@@ -436,7 +443,15 @@ export default function Home() {
             {/* MIDDLE: Modes */}
             <nav className="flex gap-6 items-center bg-[#2c2e31] rounded-lg px-6 py-3">
               {(["time", "words", "quote", "zen", "custom"] as Mode[]).map((m) => (
-                <button key={m} onClick={() => setMode(m)} className={`hover:text-[#d1d1d1] transition-colors ${mode === m ? "text-[#e2b714]" : ""}`}>{m}</button>
+                <button
+                  key={m}
+                  onClick={() => setMode(m)}
+                  className={`flex items-center gap-2 hover:text-[#d1d1d1] transition-colors ${mode === m ? "text-[#e2b714]" : ""
+                    }`}
+                >
+                  <i className={`${MODE_ICONS[m]} text-[13px]`} aria-hidden="true"></i>
+                  {m}
+                </button>
               ))}
             </nav>
 
@@ -476,7 +491,7 @@ export default function Home() {
             {/* FAR RIGHT: Sound */}
             <div className="flex items-center gap-4 bg-[#2c2e31] rounded-lg px-4 py-3">
               <button onClick={() => setSound(!sound)} className={`hover:text-[#d1d1d1] transition-colors ${sound ? "text-[#e2b714]" : ""}`} title="Toggle sound">
-                {sound ? "🔊" : "🔇"}
+                <i className={`fas ${sound ? "fa-volume-high" : "fa-volume-xmark"}`}></i>
               </button>
             </div>
 

@@ -37,13 +37,16 @@ body {
   width: 100%;
   user-select: none;
   font-family: var(--font-mono);
-  font-size: 2.5rem; /* Large MonkeyType font size */
-  line-height: 3.5rem; /* Fixed line height for exact calculations */
+  font-size: 2.5rem;
+  /* Large MonkeyType font size */
+  line-height: 3.5rem;
+  /* Fixed line height for exact calculations */
 }
 
 /* The outer wrapper that clips the overflow to exactly 3 lines */
 #test-wrapper {
-  height: 10.5rem; /* Exactly 3 lines (3 * 3.5rem) */
+  height: 10.5rem;
+  /* Exactly 3 lines (3 * 3.5rem) */
   overflow: hidden;
   position: relative;
   width: 100%;
@@ -53,7 +56,8 @@ body {
 #test-inner {
   display: flex;
   flex-wrap: wrap;
-  transition: transform 0.2s ease-out; /* Smooth scrolling effect */
+  transition: transform 0.2s ease-out;
+  /* Smooth scrolling effect */
 }
 
 #test-inner .word {
@@ -66,16 +70,20 @@ body {
 
 #test .letter {
   position: relative;
-  color: var(--color-sub); /* Default untyped state */
+  color: var(--color-sub);
+  /* Default untyped state */
   transition: color 0.05s ease-out;
 }
 
 #test .letter.active {
-  border-left: 2px solid var(--color-caret);
-  margin-left: -2px; 
-  padding-left: 2px;
+  border-left: 4px solid var(--color-caret);
+  /* Thicker cursor */
+  margin-left: -4px;
+  /* Compensates for the thicker border */
+  padding-left: 4px;
+  /* Pushes the letter back to its original spot */
   animation: blink 1s step-end infinite;
-  box-shadow: 0 0 8px -2px var(--color-caret); 
+  box-shadow: 0 0 8px -2px var(--color-caret);
 }
 
 #test .letter.correct {
@@ -95,8 +103,15 @@ body {
 
 /* MonkeyType style snapping blink */
 @keyframes blink {
-  0%, 100% { border-color: var(--color-caret); }
-  50% { border-color: transparent; }
+
+  0%,
+  100% {
+    border-color: var(--color-caret);
+  }
+
+  50% {
+    border-color: transparent;
+  }
 }
 
 /* --- RESULTS STYLES --- */
