@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, type ReactElement } from "react";
 import { WORDS, QUOTES, PUNCTUATION, NUMBERS } from "@/data/words";
 import { THEMES } from "@/data/themes";
+import OverlayTrigger from "react-bootstrap/OverlayTrigger";
+import Tooltip from "react-bootstrap/Tooltip";
 
 type Mode = "time" | "words" | "quote" | "zen" | "custom";
 
@@ -16,6 +18,25 @@ const MODE_ICONS: Record<Mode, string> = {
   zen: "fas fa-mountain",      // mountain icon
   custom: "fas fa-wrench",     // wrench icon
 };
+
+// 🎯 Reusable react-bootstrap tooltip wrapper
+const Tip = ({
+  label,
+  placement = "bottom",
+  children,
+}: {
+  label: string;
+  placement?: "top" | "bottom";
+  children: ReactElement;
+}) => (
+  <OverlayTrigger
+    placement={placement}
+    delay={{ show: 150, hide: 100 }}
+    overlay={<Tooltip id={`tip-${label.replace(/\s+/g, "-")}`}>{label}</Tooltip>}
+  >
+    {children}
+  </OverlayTrigger>
+);
 
 export default function Home() {
   const [mode, setMode] = useState<Mode>("time");
@@ -514,64 +535,69 @@ export default function Home() {
             <header className="mb-10 text-sub text-sm font-medium w-full">
 
               {/* ROW 1: LOGO — pinned top-left, exactly like monkeytype */}
-              <div
-                className="flex items-center gap-3 cursor-pointer group select-none w-fit mb-8"
-                onClick={initTest}
-                title="Restart test (or press Tab)"
-              >
-                {/* 🎹 KEYBOARD SVG */}
-                <svg width="45" height="32" viewBox="0 0 80 60" className="flex-shrink-0 transition-transform duration-200 group-hover:scale-105 drop-shadow-md">
-                  {/* Keyboard Base (Chassis) */}
-                  <rect x="1" y="6" width="78" height="48" rx="4" fill="var(--tf-sub-alt)" stroke="var(--tf-sub)" strokeWidth="1.5" />
+              <Tip label="Restart test (or press Tab)" placement="bottom">
+                <div
+                  className="flex items-center gap-3 cursor-pointer group select-none w-fit mb-8"
+                  onClick={initTest}
+                >
+                  {/* 🎹 KEYBOARD SVG */}
+                  <svg width="45" height="32" viewBox="0 0 80 60" className="flex-shrink-0 transition-transform duration-200 group-hover:scale-105 drop-shadow-md">
+                    {/* Keyboard Base (Chassis) */}
+                    <rect x="1" y="6" width="78" height="48" rx="4" fill="var(--tf-sub-alt)" stroke="var(--tf-sub)" strokeWidth="1.5" />
 
-                  {/* Row 1 (Top) */}
-                  <rect x="4" y="12" width="10" height="7" rx="1.5" fill="var(--tf-line)" />
-                  <rect x="16" y="12" width="10" height="7" rx="1.5" fill="var(--tf-line)" />
-                  <rect x="28" y="12" width="10" height="7" rx="1.5" fill="var(--tf-line)" />
-                  <rect x="40" y="12" width="10" height="7" rx="1.5" fill="var(--tf-line)" />
-                  <rect x="52" y="12" width="10" height="7" rx="1.5" fill="var(--tf-line)" />
-                  <rect x="64" y="12" width="10" height="7" rx="1.5" fill="var(--tf-line)" />
+                    {/* Row 1 (Top) */}
+                    <rect x="4" y="12" width="10" height="7" rx="1.5" fill="var(--tf-line)" />
+                    <rect x="16" y="12" width="10" height="7" rx="1.5" fill="var(--tf-line)" />
+                    <rect x="28" y="12" width="10" height="7" rx="1.5" fill="var(--tf-line)" />
+                    <rect x="40" y="12" width="10" height="7" rx="1.5" fill="var(--tf-line)" />
+                    <rect x="52" y="12" width="10" height="7" rx="1.5" fill="var(--tf-line)" />
+                    <rect x="64" y="12" width="10" height="7" rx="1.5" fill="var(--tf-line)" />
 
-                  {/* Row 2 (Middle - 't' and 'F' keys) */}
-                  <rect x="6" y="21" width="10" height="7" rx="1.5" fill="var(--tf-line)" />
-                  <rect x="14" y="21" width="10" height="7" rx="1.5" fill="var(--tf-caret)" />
-                  <text x="19" y="27" fontFamily="system-ui, sans-serif" fontSize="5.5" fontWeight="800" fill="var(--tf-bg)" textAnchor="middle">t</text>
-                  <rect x="30" y="21" width="10" height="7" rx="1.5" fill="var(--tf-line)" />
-                  <rect x="46" y="21" width="10" height="7" rx="1.5" fill="var(--tf-main)" />
-                  <text x="51" y="27" fontFamily="system-ui, sans-serif" fontSize="5.5" fontWeight="800" fill="var(--tf-bg)" textAnchor="middle">F</text>
-                  <rect x="62" y="21" width="10" height="7" rx="1.5" fill="var(--tf-line)" />
+                    {/* Row 2 (Middle - 't' and 'F' keys) */}
+                    <rect x="6" y="21" width="10" height="7" rx="1.5" fill="var(--tf-line)" />
+                    <rect x="14" y="21" width="10" height="7" rx="1.5" fill="var(--tf-caret)" />
+                    <text x="19" y="27" fontFamily="system-ui, sans-serif" fontSize="5.5" fontWeight="800" fill="var(--tf-bg)" textAnchor="middle">t</text>
+                    <rect x="30" y="21" width="10" height="7" rx="1.5" fill="var(--tf-line)" />
+                    <rect x="46" y="21" width="10" height="7" rx="1.5" fill="var(--tf-main)" />
+                    <text x="51" y="27" fontFamily="system-ui, sans-serif" fontSize="5.5" fontWeight="800" fill="var(--tf-bg)" textAnchor="middle">F</text>
+                    <rect x="62" y="21" width="10" height="7" rx="1.5" fill="var(--tf-line)" />
 
-                  {/* Row 3 (Bottom) */}
-                  <rect x="8" y="30" width="10" height="7" rx="1.5" fill="var(--tf-line)" />
-                  <rect x="20" y="30" width="10" height="7" rx="1.5" fill="var(--tf-line)" />
-                  <rect x="32" y="30" width="10" height="7" rx="1.5" fill="var(--tf-line)" />
-                  <rect x="44" y="30" width="10" height="7" rx="1.5" fill="var(--tf-line)" />
-                  <rect x="56" y="30" width="10" height="7" rx="1.5" fill="var(--tf-line)" />
+                    {/* Row 3 (Bottom) */}
+                    <rect x="8" y="30" width="10" height="7" rx="1.5" fill="var(--tf-line)" />
+                    <rect x="20" y="30" width="10" height="7" rx="1.5" fill="var(--tf-line)" />
+                    <rect x="32" y="30" width="10" height="7" rx="1.5" fill="var(--tf-line)" />
+                    <rect x="44" y="30" width="10" height="7" rx="1.5" fill="var(--tf-line)" />
+                    <rect x="56" y="30" width="10" height="7" rx="1.5" fill="var(--tf-line)" />
 
-                  {/* Row 4 (Spacebar) */}
-                  <rect x="20" y="39" width="40" height="7" rx="2" fill="var(--tf-line)" />
-                </svg>
+                    {/* Row 4 (Spacebar) */}
+                    <rect x="20" y="39" width="40" height="7" rx="2" fill="var(--tf-line)" />
+                  </svg>
 
-                {/* TEXT BLOCK: tagline above the name, exactly like "monkey see" above "monkeytype" */}
-                <div className="flex flex-col">
-                  <span className="text-xs text-sub leading-none ms-2 tracking-wide">type in flow</span>
-                  <span className="text-4xl font-bold text-main tracking-wider leading-none">typeflow</span>
+                  {/* TEXT BLOCK: tagline above the name, exactly like "monkey see" above "monkeytype" */}
+                  <div className="flex flex-col">
+                    <span className="text-xs text-sub leading-none ms-2 tracking-wide">type in flow</span>
+                    <span className="text-4xl font-bold text-main tracking-wider leading-none">typeflow</span>
+                  </div>
                 </div>
-              </div>
+              </Tip>
 
               {/* ROW 2: CONFIG WIDGETS — centered on their own line, exactly like monkeytype */}
               <div className="flex items-center gap-4 flex-wrap justify-center">
 
                 {/* LEFT: Punctuation & Numbers */}
                 <div className="flex gap-4 items-center bg-sub-alt rounded-lg px-5 py-2.5">
-                  <button onClick={() => setPunctuation(!punctuation)} className={`flex items-center gap-2 hover:text-main transition-colors ${punctuation ? "text-caret" : ""}`} title="Toggle punctuation">
-                    <i className="fas fa-at"></i>
-                    <span className="hidden sm:inline">punctuation</span>
-                  </button>
-                  <button onClick={() => setNumbers(!numbers)} className={`flex items-center gap-2 hover:text-main transition-colors ${numbers ? "text-caret" : ""}`} title="Toggle numbers">
-                    <i className="fas fa-hashtag"></i>
-                    <span className="hidden sm:inline">numbers</span>
-                  </button>
+                  <Tip label="Toggle punctuation">
+                    <button onClick={() => setPunctuation(!punctuation)} className={`flex items-center gap-2 hover:text-main transition-colors ${punctuation ? "text-caret" : ""}`}>
+                      <i className="fas fa-at"></i>
+                      <span className="hidden sm:inline">punctuation</span>
+                    </button>
+                  </Tip>
+                  <Tip label="Toggle numbers">
+                    <button onClick={() => setNumbers(!numbers)} className={`flex items-center gap-2 hover:text-main transition-colors ${numbers ? "text-caret" : ""}`}>
+                      <i className="fas fa-hashtag"></i>
+                      <span className="hidden sm:inline">numbers</span>
+                    </button>
+                  </Tip>
                 </div>
 
                 {/* MIDDLE: Modes */}
@@ -623,9 +649,11 @@ export default function Home() {
 
                 {/* FAR RIGHT: Sound */}
                 <div className="flex items-center gap-3 bg-sub-alt rounded-lg px-4 py-2.5">
-                  <button onClick={() => setSound(!sound)} className={`hover:text-main transition-colors ${sound ? "text-caret" : ""}`} title="Toggle sound">
-                    <i className={`fas ${sound ? "fa-volume-high" : "fa-volume-xmark"}`}></i>
-                  </button>
+                  <Tip label="Toggle sound">
+                    <button onClick={() => setSound(!sound)} className={`hover:text-main transition-colors ${sound ? "text-caret" : ""}`}>
+                      <i className={`fas ${sound ? "fa-volume-high" : "fa-volume-xmark"}`}></i>
+                    </button>
+                  </Tip>
                 </div>
 
               </div>

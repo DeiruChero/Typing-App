@@ -178,3 +178,68 @@ input[type="number"] {
 #configModal {
   backdrop-filter: blur(4px);
 }
+
+/* ---------- react-bootstrap tooltips (theme-aware) ---------- */
+.tooltip {
+  position: absolute;
+  z-index: 1080;
+  display: block;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  pointer-events: none;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}
+
+.tooltip.show {
+  opacity: 1;
+}
+
+.tooltip .tooltip-inner {
+  max-width: 220px;
+  padding: 0.35rem 0.65rem;
+  color: var(--tf-main);
+  background-color: var(--tf-sub-alt);
+  border: 1px solid var(--tf-line);
+  border-radius: 0.4rem;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  text-align: center;
+}
+
+.tooltip .tooltip-arrow {
+  position: absolute;
+  display: block;
+  width: 0.8rem;
+  height: 0.4rem;
+}
+
+.tooltip .tooltip-arrow::before {
+  content: "";
+  position: absolute;
+  border-color: transparent;
+  border-style: solid;
+}
+
+.bs-tooltip-top .tooltip-arrow,
+.bs-tooltip-auto[data-popper-placement^="top"] .tooltip-arrow {
+  bottom: calc(-1 * 0.4rem);
+}
+
+.bs-tooltip-top .tooltip-arrow::before,
+.bs-tooltip-auto[data-popper-placement^="top"] .tooltip-arrow::before {
+  top: -1px;
+  border-width: 0.4rem 0.4rem 0;
+  border-top-color: var(--tf-sub-alt);
+}
+
+.bs-tooltip-bottom .tooltip-arrow,
+.bs-tooltip-auto[data-popper-placement^="bottom"] .tooltip-arrow {
+  top: calc(-1 * 0.4rem);
+}
+
+.bs-tooltip-bottom .tooltip-arrow::before,
+.bs-tooltip-auto[data-popper-placement^="bottom"] .tooltip-arrow::before {
+  bottom: -1px;
+  border-width: 0 0.4rem 0.4rem;
+  border-bottom-color: var(--tf-sub-alt);
+}
