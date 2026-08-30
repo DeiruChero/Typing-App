@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { WORDS, QUOTES, PUNCTUATION, NUMBERS } from "@/data/words";
+import { THEMES } from "@/data/themes";
 
 type Mode = "time" | "words" | "quote" | "zen" | "custom";
 
@@ -38,6 +39,13 @@ export default function Home() {
   const [timer, setTimer] = useState<number>(0);
   const [liveWpm, setLiveWpm] = useState<number>(0);
   const [contentVersion, setContentVersion] = useState<number>(0);
+  const [theme, setTheme] = useState<string>(() =>
+    typeof window !== "undefined"
+      ? localStorage.getItem("typeflow-theme") || "serika dark"
+      : "serika dark"
+  );
+  const [showThemeModal, setShowThemeModal] = useState(false);
+  const [themeSearch, setThemeSearch] = useState("");
   const [result, setResult] = useState<{
     wpm: number;
     rawWpm: number;
@@ -326,7 +334,7 @@ export default function Home() {
       setCurrentInput(prev => prev + e.key);
       setCurrentLetterIndex(prev => prev + 1);
     }
-  }, [isTestFinished, isPaused, isTestActive, currentInput, inputHistory, currentWordIndex, words, mode, startTest, finishTest, initTest, resumeTest, playKeySound]);
+  }, [isTestFinished, isPaused, isTestActive, currentInput, inputHistory, currentWordIndex, words, mode, startTest, finishTest, initTest, resumeTest, playKeySound, showThemeModal]);
 
   useEffect(() => {
     window.addEventListener("keydown", handleKeyDown);
@@ -420,6 +428,20 @@ export default function Home() {
     return () => window.removeEventListener("resize", calculateLineShift);
   }, [calculateLineShift]);
 
+  useEffect(() => {
+    const t = THEMES.find(x => x.name === theme) ?? THEMES[0];
+    const s = document.documentElement.style;
+    s.setProperty("--tf-bg", t.bg);
+    s.setProperty("--tf-sub-alt", t.subAlt);
+    s.setProperty("--tf-sub", t.sub);
+    s.setProperty("--tf-main", t.main);
+    s.setProperty("--tf-caret", t.caret);
+    s.setProperty("--tf-error", t.error);
+    s.setProperty("--tf-error-extra", t.errorExtra);
+    s.setProperty("--tf-line", t.line);
+    localStorage.setItem("typeflow-theme", t.name);
+  }, [theme]);
+
   const isExtraLetter = (wordIdx: number, letterIdx: number, targetWord?: string): boolean => {
     if (wordIdx !== currentWordIndex) return false;
     const target = targetWord ?? words[wordIdx] ?? "";
@@ -440,179 +462,230 @@ export default function Home() {
   const endWordIndex = Math.min(visibleWords.length, startWordIndex + 20);
 
   return (
-    <main className="min-h-screen flex flex-col bg-[#323437] text-[#d1d1d1]">
+    <>
+      <main className="min-h-screen flex flex-col bg-bg text-sub">
 
-      {/* 1. TOP HEADER */}
-      <div className="w-full max-w-7xl mx-auto px-2 sm:px-4 pt-6">
-        <header className="flex justify-center items-center mb-10 text-[#646566] text-sm font-medium">
-          <div className="flex items-center gap-4 flex-wrap justify-center">
+        {/* 1. TOP HEADER */}
+        <div className="w-full max-w-7xl mx-auto px-2 sm:px-4 pt-6">
+          <header className="flex justify-center items-center mb-10 text-sub text-sm font-medium">
+            <div className="flex items-center gap-4 flex-wrap justify-center">
 
-            {/* LEFT: Punctuation & Numbers */}
-            <div className="flex gap-6 items-center bg-[#2c2e31] rounded-lg px-6 py-3">
-              <button onClick={() => setPunctuation(!punctuation)} className={`flex items-center gap-2 hover:text-[#d1d1d1] transition-colors ${punctuation ? "text-[#e2b714]" : ""}`} title="Toggle punctuation">
-                <i className="fas fa-at"></i>
-                <span className="hidden sm:inline">punctuation</span>
-              </button>
-              <button onClick={() => setNumbers(!numbers)} className={`flex items-center gap-2 hover:text-[#d1d1d1] transition-colors ${numbers ? "text-[#e2b714]" : ""}`} title="Toggle numbers">
-                <i className="fas fa-hashtag"></i>
-                <span className="hidden sm:inline">numbers</span>
-              </button>
+              {/* LEFT: Punctuation & Numbers */}
+              <div className="flex gap-6 items-center bg-sub-alt rounded-lg px-6 py-3">
+                <button onClick={() => setPunctuation(!punctuation)} className={`flex items-center gap-2 hover:text-main transition-colors ${punctuation ? "text-caret" : ""}`} title="Toggle punctuation">
+                  <i className="fas fa-at"></i>
+                  <span className="hidden sm:inline">punctuation</span>
+                </button>
+                <button onClick={() => setNumbers(!numbers)} className={`flex items-center gap-2 hover:text-main transition-colors ${numbers ? "text-caret" : ""}`} title="Toggle numbers">
+                  <i className="fas fa-hashtag"></i>
+                  <span className="hidden sm:inline">numbers</span>
+                </button>
+              </div>
+
+              {/* MIDDLE: Modes */}
+              <nav className="flex gap-6 items-center bg-sub-alt rounded-lg px-6 py-3">
+                {(["time", "words", "quote", "zen", "custom"] as Mode[]).map((m) => (
+                  <button
+                    key={m}
+                    onClick={() => setMode(m)}
+                    className={`flex items-center gap-2 hover:text-main transition-colors ${mode === m ? "text-caret" : ""
+                      }`}
+                  >
+                    <i className={`${MODE_ICONS[m]} text-[13px]`} aria-hidden="true"></i>
+                    {m}
+                  </button>
+                ))}
+              </nav>
+
+              {/* RIGHT: Time/Word Options & Custom Input */}
+              <div className="flex gap-5 items-center bg-sub-alt rounded-lg px-6 py-3">
+                {mode === "time" && (
+                  <>
+                    {TIME_OPTIONS.map((t) => (
+                      <button key={t} onClick={() => { setTimeMode(t); setCustomTime(""); }} className={`hover:text-main transition-colors ${timeMode === t && !customTime ? "text-caret" : ""}`}>{t}</button>
+                    ))}
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs opacity-50"><i className="fas fa-tools"></i></span>
+                      <input type="number" value={customTime} onChange={(e) => setCustomTime(e.target.value)} placeholder="custom" className="w-16 bg-transparent border-b border-line focus:border-caret focus:outline-none transition-colors text-right" />
+                    </div>
+                  </>
+                )}
+                {mode === "words" && (
+                  <>
+                    {WORD_OPTIONS.map((w) => (
+                      <button key={w} onClick={() => { setWordMode(w); setCustomWords(""); }} className={`hover:text-main transition-colors ${wordMode === w && !customWords ? "text-caret" : ""}`}>{w}</button>
+                    ))}
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs opacity-50">⚙️</span>
+                      <input type="number" value={customWords} onChange={(e) => setCustomWords(e.target.value)} placeholder="custom" className="w-16 bg-transparent border-b border-line focus:border-caret focus:outline-none transition-colors text-right" />
+                    </div>
+                  </>
+                )}
+                {mode === "quote" && (
+                  <>
+                    {QUOTE_OPTIONS.map((q) => (
+                      <button key={q} onClick={() => setQuoteMode(q)} className={`hover:text-main transition-colors ${quoteMode === q ? "text-caret" : ""}`}>{q}</button>
+                    ))}
+                  </>
+                )}
+              </div>
+
+              {/* FAR RIGHT: Sound */}
+              <div className="flex items-center gap-4 bg-sub-alt rounded-lg px-4 py-3">
+                <button onClick={() => setSound(!sound)} className={`hover:text-main transition-colors ${sound ? "text-caret" : ""}`} title="Toggle sound">
+                  <i className={`fas ${sound ? "fa-volume-high" : "fa-volume-xmark"}`}></i>
+                </button>
+              </div>
+
             </div>
+          </header>
+        </div>
 
-            {/* MIDDLE: Modes */}
-            <nav className="flex gap-6 items-center bg-[#2c2e31] rounded-lg px-6 py-3">
-              {(["time", "words", "quote", "zen", "custom"] as Mode[]).map((m) => (
+        {/* 2. MIDDLE TEST AREA (flex-1 pushes this to the exact vertical center) */}
+        <div className="flex-1 flex items-center justify-center w-full">
+          <div className="w-full px-6 md:px-[8vw] relative">
+            <div id="test" className="mx-auto select-none">
+
+              {!isTestFinished && mode === "quote" && currentQuote ? (
+                <div className="text-center">
+                  <div className="text-xl mb-4 text-main">
+                    {currentQuote.text.split("").map((letter, idx) => {
+                      let letterClass = "";
+                      if (idx < currentInput.length) letterClass = currentInput[idx] === letter ? "correct" : "incorrect";
+                      else if (idx === currentInput.length) letterClass = "active";
+                      return <span key={idx} className={`letter ${letterClass}`}>{letter === " " ? "\u00A0" : letter}</span>;
+                    })}
+                  </div>
+                  <div className="text-sm text-sub">— {currentQuote.author}</div>
+                </div>
+              ) : !isTestFinished && visibleWords.length > 0 ? (
+                /* --- NEW 3-LINE WRAPPER LOGIC --- */
+                <div id="test-wrapper">
+                  <div
+                    id="test-inner"
+                    key={`text-${contentVersion}`}
+                    className="words-fade"
+                    style={{ transform: `translateY(-${translateY}rem)` }}
+                  >
+                    {visibleWords.map((word, idx) => (
+                      <span
+                        key={idx}
+                        className="word"
+                        ref={el => { if (el) wordRefs.current[idx] = el; }}
+                      >
+                        {word.split("").map((letter, letterIdx) => (
+                          <span
+                            key={letterIdx}
+                            className={`letter ${getLetterClass(idx, letterIdx, letter, word)} ${isExtraLetter(idx, letterIdx, word) ? "extra" : ""}`}
+                          >
+                            {letter}
+                          </span>
+                        ))}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ) : isTestFinished && result ? (
+                <div id="result" className="text-center py-12">
+                  <div className="text-6xl font-bold mb-2 text-caret">{result.wpm}</div>
+                  <div className="text-lg text-sub mb-8">wpm</div>
+                  <div className="flex justify-center gap-2 mb-8">
+                    <div className="stat"><div className="stat-value text-caret">{result.rawWpm}</div><div className="stat-label">raw</div></div>
+                    <div className="stat"><div className="stat-value text-caret">{result.accuracy}%</div><div className="stat-label">accuracy</div></div>
+                    <div className="stat"><div className="stat-value text-caret">{result.characters}</div><div className="stat-label">chars</div></div>
+                    <div className="stat"><div className="stat-value text-caret">{result.correctChars}</div><div className="stat-label">correct</div></div>
+                    <div className="stat"><div className="stat-value text-caret">{result.incorrectChars}</div><div className="stat-label">incorrect</div></div>
+                  </div>
+                  <div className="flex justify-center gap-4 text-sm text-sub">
+                    <div><span className="text-caret">+</span> {result.extraChars} extra</div>
+                    <div><span className="text-caret">-</span> {result.missedChars} missed</div>
+                    <div>time: <span className="text-caret">{result.time}s</span></div>
+                  </div>
+                  <button onClick={handleRestart} className="mt-8 px-6 py-2 bg-caret text-bg rounded-md font-medium hover:opacity-90 transition-colors shadow-sm">restart</button>
+                </div>
+              ) : (
+                <div className="text-center text-sub text-xl">Start typing to begin the test</div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* 3. BOTTOM STATS */}
+        <div className="w-full px-6 md:px-[8vw] pb-6">
+
+          {/* KEYBOARD HINTS (exactly like monkeytype) */}
+          <div className="flex flex-col items-center gap-2 mb-8 text-xs text-sub">
+            <div className="flex items-center gap-2">
+              <kbd className="key-hint">escape</kbd>
+              <span>- restart test</span>
+            </div>
+          </div>
+          <div className="flex justify-between items-center mt-6 text-sm text-sub">
+            <div>
+              {isTestActive && !isPaused && mode === "time" && (
+                <span>{customTime ? `${timer} / ${customTime}` : `${timer} / ${timeMode}`}</span>
+              )}
+              {isTestActive && !isPaused && mode === "words" && (
+                <span>{currentWordIndex} / {words.length}</span>
+              )}
+            </div>
+            <div>
+              {isTestActive && !isPaused && liveWpm > 0 && (
+                <span className="text-caret font-medium">{liveWpm} wpm</span>
+              )}
+            </div>
+          </div>
+          <div className="flex justify-end items-center gap-2 mt-3 text-xs text-sub">
+            <i className="fas fa-palette text-caret"></i>
+            <button onClick={() => setShowThemeModal(true)} className="hover:text-main transition-colors">
+              {theme}
+            </button>
+          </div>
+        </div>
+      </main>
+      {/* THEME SWITCHER MODAL */}
+      {showThemeModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-start justify-center pt-[12vh] bg-black/50"
+          onClick={() => setShowThemeModal(false)}
+        >
+          <div
+            className="w-full max-w-2xl mx-4 bg-sub-alt rounded-lg shadow-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3 px-5 py-4">
+              <i className="fas fa-magnifying-glass text-sub"></i>
+              <input
+                autoFocus
+                value={themeSearch}
+                onChange={(e) => setThemeSearch(e.target.value)}
+                placeholder="Theme..."
+                className="flex-1 bg-transparent text-main placeholder:text-sub font-mono text-sm focus:outline-none"
+              />
+            </div>
+            <div className="max-h-[50vh] overflow-y-auto pb-2">
+              {THEMES.filter((t) => t.name.toLowerCase().includes(themeSearch.toLowerCase())).map((t) => (
                 <button
-                  key={m}
-                  onClick={() => setMode(m)}
-                  className={`flex items-center gap-2 hover:text-[#d1d1d1] transition-colors ${mode === m ? "text-[#e2b714]" : ""
+                  key={t.name}
+                  onClick={() => setTheme(t.name)}
+                  className={`w-full flex items-center justify-between px-5 py-2.5 font-mono text-sm transition-colors ${theme === t.name ? "bg-main text-bg" : "text-sub hover:text-main hover:bg-line/30"
                     }`}
                 >
-                  <i className={`${MODE_ICONS[m]} text-[13px]`} aria-hidden="true"></i>
-                  {m}
+                  <span className="flex items-center gap-3">
+                    {theme === t.name && <i className="fas fa-check"></i>}
+                    {t.name}
+                  </span>
+                  <span className="flex gap-1.5">
+                    <span className="w-4 h-4 rounded-full" style={{ background: t.caret }} />
+                    <span className="w-4 h-4 rounded-full" style={{ background: t.sub }} />
+                    <span className="w-4 h-4 rounded-full" style={{ background: t.main }} />
+                  </span>
                 </button>
               ))}
-            </nav>
-
-            {/* RIGHT: Time/Word Options & Custom Input */}
-            <div className="flex gap-5 items-center bg-[#2c2e31] rounded-lg px-6 py-3">
-              {mode === "time" && (
-                <>
-                  {TIME_OPTIONS.map((t) => (
-                    <button key={t} onClick={() => { setTimeMode(t); setCustomTime(""); }} className={`hover:text-[#d1d1d1] transition-colors ${timeMode === t && !customTime ? "text-[#e2b714]" : ""}`}>{t}</button>
-                  ))}
-                  <div className="flex items-center gap-1">
-                    <span className="text-xs opacity-50"><i className="fas fa-tools"></i></span>
-                    <input type="number" value={customTime} onChange={(e) => setCustomTime(e.target.value)} placeholder="custom" className="w-16 bg-transparent border-b border-[#4a4b4e] focus:border-[#e2b714] focus:outline-none transition-colors text-right" />
-                  </div>
-                </>
-              )}
-              {mode === "words" && (
-                <>
-                  {WORD_OPTIONS.map((w) => (
-                    <button key={w} onClick={() => { setWordMode(w); setCustomWords(""); }} className={`hover:text-[#d1d1d1] transition-colors ${wordMode === w && !customWords ? "text-[#e2b714]" : ""}`}>{w}</button>
-                  ))}
-                  <div className="flex items-center gap-1">
-                    <span className="text-xs opacity-50">⚙️</span>
-                    <input type="number" value={customWords} onChange={(e) => setCustomWords(e.target.value)} placeholder="custom" className="w-16 bg-transparent border-b border-[#4a4b4e] focus:border-[#e2b714] focus:outline-none transition-colors text-right" />
-                  </div>
-                </>
-              )}
-              {mode === "quote" && (
-                <>
-                  {QUOTE_OPTIONS.map((q) => (
-                    <button key={q} onClick={() => setQuoteMode(q)} className={`hover:text-[#d1d1d1] transition-colors ${quoteMode === q ? "text-[#e2b714]" : ""}`}>{q}</button>
-                  ))}
-                </>
-              )}
             </div>
-
-            {/* FAR RIGHT: Sound */}
-            <div className="flex items-center gap-4 bg-[#2c2e31] rounded-lg px-4 py-3">
-              <button onClick={() => setSound(!sound)} className={`hover:text-[#d1d1d1] transition-colors ${sound ? "text-[#e2b714]" : ""}`} title="Toggle sound">
-                <i className={`fas ${sound ? "fa-volume-high" : "fa-volume-xmark"}`}></i>
-              </button>
-            </div>
-
-          </div>
-        </header>
-      </div>
-
-      {/* 2. MIDDLE TEST AREA (flex-1 pushes this to the exact vertical center) */}
-      <div className="flex-1 flex items-center justify-center w-full">
-        <div className="w-full px-6 md:px-[8vw] relative">
-          <div id="test" className="mx-auto select-none">
-
-            {!isTestFinished && mode === "quote" && currentQuote ? (
-              <div className="text-center">
-                <div className="text-xl mb-4 text-[#d1d1d1]">
-                  {currentQuote.text.split("").map((letter, idx) => {
-                    let letterClass = "";
-                    if (idx < currentInput.length) letterClass = currentInput[idx] === letter ? "correct" : "incorrect";
-                    else if (idx === currentInput.length) letterClass = "active";
-                    return <span key={idx} className={`letter ${letterClass}`}>{letter === " " ? "\u00A0" : letter}</span>;
-                  })}
-                </div>
-                <div className="text-sm text-[#646566]">— {currentQuote.author}</div>
-              </div>
-            ) : !isTestFinished && visibleWords.length > 0 ? (
-              /* --- NEW 3-LINE WRAPPER LOGIC --- */
-              <div id="test-wrapper">
-                <div
-                  id="test-inner"
-                  key={`text-${contentVersion}`}
-                  className="words-fade"
-                  style={{ transform: `translateY(-${translateY}rem)` }}
-                >
-                  {visibleWords.map((word, idx) => (
-                    <span
-                      key={idx}
-                      className="word"
-                      ref={el => { if (el) wordRefs.current[idx] = el; }}
-                    >
-                      {word.split("").map((letter, letterIdx) => (
-                        <span
-                          key={letterIdx}
-                          className={`letter ${getLetterClass(idx, letterIdx, letter, word)} ${isExtraLetter(idx, letterIdx, word) ? "extra" : ""}`}
-                        >
-                          {letter}
-                        </span>
-                      ))}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            ) : isTestFinished && result ? (
-              <div id="result" className="text-center py-12">
-                <div className="text-6xl font-bold mb-2 text-[#e2b714]">{result.wpm}</div>
-                <div className="text-lg text-[#646566] mb-8">wpm</div>
-                <div className="flex justify-center gap-2 mb-8">
-                  <div className="stat"><div className="stat-value text-[#e2b714]">{result.rawWpm}</div><div className="stat-label">raw</div></div>
-                  <div className="stat"><div className="stat-value text-[#e2b714]">{result.accuracy}%</div><div className="stat-label">accuracy</div></div>
-                  <div className="stat"><div className="stat-value text-[#e2b714]">{result.characters}</div><div className="stat-label">chars</div></div>
-                  <div className="stat"><div className="stat-value text-[#e2b714]">{result.correctChars}</div><div className="stat-label">correct</div></div>
-                  <div className="stat"><div className="stat-value text-[#e2b714]">{result.incorrectChars}</div><div className="stat-label">incorrect</div></div>
-                </div>
-                <div className="flex justify-center gap-4 text-sm text-[#646566]">
-                  <div><span className="text-[#e2b714]">+</span> {result.extraChars} extra</div>
-                  <div><span className="text-[#e2b714]">-</span> {result.missedChars} missed</div>
-                  <div>time: <span className="text-[#e2b714]">{result.time}s</span></div>
-                </div>
-                <button onClick={handleRestart} className="mt-8 px-6 py-2 bg-[#e2b714] text-[#323437] rounded-md font-medium hover:bg-[#d4a813] transition-colors shadow-sm">restart</button>
-              </div>
-            ) : (
-              <div className="text-center text-[#646566] text-xl">Start typing to begin the test</div>
-            )}
           </div>
         </div>
-      </div>
-
-      {/* 3. BOTTOM STATS */}
-      <div className="w-full px-6 md:px-[8vw] pb-6">
-
-        {/* KEYBOARD HINTS (exactly like monkeytype) */}
-        <div className="flex flex-col items-center gap-2 mb-8 text-xs text-[#646566]">
-          <div className="flex items-center gap-2">
-            <kbd className="key-hint">escape</kbd>
-            <span>- restart test</span>
-          </div>
-        </div>
-        <div className="flex justify-between items-center mt-6 text-sm text-[#646566]">
-          <div>
-            {isTestActive && !isPaused && mode === "time" && (
-              <span>{customTime ? `${timer} / ${customTime}` : `${timer} / ${timeMode}`}</span>
-            )}
-            {isTestActive && !isPaused && mode === "words" && (
-              <span>{currentWordIndex} / {words.length}</span>
-            )}
-          </div>
-          <div>
-            {isTestActive && !isPaused && liveWpm > 0 && (
-              <span className="text-[#e2b714] font-medium">{liveWpm} wpm</span>
-            )}
-          </div>
-        </div>
-      </div>
-    </main>
+      )}
+    </>
   );
 }
