@@ -2,12 +2,20 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { WORDS, QUOTES, PUNCTUATION, NUMBERS } from "@/data/words";
+import { THEMES } from "@/data/themes";
 
 type Mode = "time" | "words" | "quote" | "zen" | "custom";
 
 const TIME_OPTIONS = [15, 30, 60, 120];
 const WORD_OPTIONS = [10, 25, 50, 100];
 const QUOTE_OPTIONS = ["short", "medium", "long", "all"];
+const MODE_ICONS: Record<Mode, string> = {
+  time: "far fa-clock",        // clock icon
+  words: "fas fa-font",        // "A" letter icon
+  quote: "fas fa-quote-left",  // " quote icon
+  zen: "fas fa-mountain",      // mountain icon
+  custom: "fas fa-wrench",     // wrench icon
+};
 
 export default function Home() {
   const [mode, setMode] = useState<Mode>("time");
@@ -30,6 +38,14 @@ export default function Home() {
   const [currentInput, setCurrentInput] = useState<string>("");
   const [timer, setTimer] = useState<number>(0);
   const [liveWpm, setLiveWpm] = useState<number>(0);
+  const [contentVersion, setContentVersion] = useState<number>(0);
+  const [theme, setTheme] = useState<string>(() =>
+    typeof window !== "undefined"
+      ? localStorage.getItem("typeflow-theme") || "serika dark"
+      : "serika dark"
+  );
+  const [showThemeModal, setShowThemeModal] = useState(false);
+  const [themeSearch, setThemeSearch] = useState("");
   const [result, setResult] = useState<{
     wpm: number;
     rawWpm: number;
@@ -44,6 +60,8 @@ export default function Home() {
 
   const testContainerRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const [translateY, setTranslateY] = useState<number>(0);
+  const wordRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const inputHistoryRef = useRef<string[][]>([]);
   const wordsRef = useRef<string[]>([]);
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -73,7 +91,7 @@ export default function Home() {
       osc.start();
       gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.05);
       osc.stop(ctx.currentTime + 0.05);
-    } catch {}
+    } catch { }
   }, [sound]);
 
   const generateWords = useCallback((count: number): string[] => {
@@ -112,6 +130,9 @@ export default function Home() {
     setCurrentInput("");
     setCurrentWordIndex(0);
     setCurrentLetterIndex(0);
+    setContentVersion(prev => prev + 1);
+    setTranslateY(0);
+    wordRefs.current = [];
 
     if (mode === "time") {
       setWords(generateWords(100));
@@ -140,12 +161,6 @@ export default function Home() {
   useEffect(() => {
     initTest();
   }, [mode, timeMode, wordMode, quoteMode, customTime, customWords, punctuation, numbers]);
-
-  useEffect(() => {
-    if (isTestActive && mode === "time" && !customTime) {
-      if (timer >= timeMode) finishTest();
-    }
-  }, [timer, isTestActive, mode, timeMode, customTime]);
 
   const finishTest = useCallback(() => {
     setIsTestActive(false);
@@ -190,6 +205,15 @@ export default function Home() {
     setResult({ wpm, rawWpm, accuracy, characters: totalChars, correctChars, incorrectChars, extraChars, missedChars, time: timer });
   }, [timer, customTime, timeMode]);
 
+  useEffect(() => {
+    if (isTestActive && mode === "time") {
+      const targetTime = customTime ? parseInt(customTime) : timeMode;
+      if (!isNaN(targetTime) && targetTime > 0 && timer >= targetTime) {
+        finishTest();
+      }
+    }
+  }, [timer, isTestActive, mode, timeMode, customTime, finishTest]);
+
   const startTest = useCallback(() => {
     if (timerRef.current) return;
     if (isTestFinished) return;
@@ -227,6 +251,19 @@ export default function Home() {
   }, [isTestFinished, startTest]);
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    // Restart the test with Escape at any time
+    if (e.key === "Escape") {
+      const target = e.target as HTMLElement;
+      // If the user is typing inside the "custom" input box, just exit the input instead of restarting
+      if (target.tagName === "INPUT") {
+        target.blur();
+        return;
+      }
+      e.preventDefault();
+      initTest();
+      return;
+    }
+
     if (isTestFinished) {
       if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
         initTest();
@@ -235,10 +272,12 @@ export default function Home() {
     }
 
     if (isPaused) {
-      if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
-        resumeTest();
+      // If a non-typing key (like Shift, F5, etc.) is pressed while paused, ignore it
+      if (!(e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey)) {
+        return;
       }
-      return;
+      resumeTest();
+      // ⚠️ No "return" here! We fall through so this same keypress also gets typed.
     }
 
     if (e.ctrlKey || e.metaKey || e.altKey) return;
@@ -298,7 +337,7 @@ export default function Home() {
       setCurrentInput(prev => prev + e.key);
       setCurrentLetterIndex(prev => prev + 1);
     }
-  }, [isTestFinished, isPaused, isTestActive, currentInput, inputHistory, currentWordIndex, words, mode, startTest, finishTest, initTest, resumeTest, playKeySound]);
+  }, [isTestFinished, isPaused, isTestActive, currentInput, inputHistory, currentWordIndex, words, mode, startTest, finishTest, initTest, resumeTest, playKeySound, showThemeModal]);
 
   useEffect(() => {
     window.addEventListener("keydown", handleKeyDown);
@@ -316,28 +355,18 @@ export default function Home() {
   }, [isTestActive, isTestFinished, isPaused, pauseTest]);
 
   useEffect(() => {
-    const el = testContainerRef.current;
-    if (!el) return;
-
-    const handleMouseLeave = () => {
+    const handleMouseMove = () => {
+      // Only pause if the test is active, not finished, and not already paused
       if (isTestActive && !isTestFinished && !isPaused) {
         pauseTest();
       }
     };
 
-    const handleMouseEnter = () => {
-      if (isPaused && isTestActive && !isTestFinished) {
-        resumeTest();
-      }
-    };
-
-    el.addEventListener("mouseleave", handleMouseLeave);
-    el.addEventListener("mouseenter", handleMouseEnter);
+    window.addEventListener("mousemove", handleMouseMove);
     return () => {
-      el.removeEventListener("mouseleave", handleMouseLeave);
-      el.removeEventListener("mouseenter", handleMouseEnter);
+      window.removeEventListener("mousemove", handleMouseMove);
     };
-  }, [isTestActive, isTestFinished, isPaused, pauseTest, resumeTest]);
+  }, [isTestActive, isTestFinished, isPaused, pauseTest]);
 
   const getLetterClass = (wordIdx: number, letterIdx: number, letter: string, targetWord?: string): string => {
     const target = targetWord ?? words[wordIdx] ?? "";
@@ -369,6 +398,53 @@ export default function Home() {
     return "";
   };
 
+  const calculateLineShift = useCallback(() => {
+    if (mode === "quote" || isTestFinished) return;
+
+    const currentWordEl = wordRefs.current[currentWordIndex];
+    const firstWordEl = wordRefs.current[0];
+
+    if (!currentWordEl || !firstWordEl) return;
+
+    const computedStyle = window.getComputedStyle(currentWordEl);
+    let lineHeightPx = parseFloat(computedStyle.lineHeight);
+    if (isNaN(lineHeightPx)) lineHeightPx = 56; // Fallback to 3.5rem (56px)
+
+    // Calculate which line index (0, 1, 2, 3...) the current word is on
+    const lineIndex = Math.round((currentWordEl.offsetTop - firstWordEl.offsetTop) / lineHeightPx);
+
+    // If it's on the 3rd line (index 2) or below, shift the container up
+    if (lineIndex >= 2) {
+      const shiftLines = lineIndex - 1; // Keep it on the middle visual line
+      setTranslateY(shiftLines * 3.5); // 3.5rem per line
+    } else {
+      setTranslateY(0);
+    }
+  }, [currentWordIndex, mode, isTestFinished]);
+
+  useEffect(() => {
+    calculateLineShift();
+  }, [calculateLineShift]);
+
+  useEffect(() => {
+    window.addEventListener("resize", calculateLineShift);
+    return () => window.removeEventListener("resize", calculateLineShift);
+  }, [calculateLineShift]);
+
+  useEffect(() => {
+    const t = THEMES.find(x => x.name === theme) ?? THEMES[0];
+    const s = document.documentElement.style;
+    s.setProperty("--tf-bg", t.bg);
+    s.setProperty("--tf-sub-alt", t.subAlt);
+    s.setProperty("--tf-sub", t.sub);
+    s.setProperty("--tf-main", t.main);
+    s.setProperty("--tf-caret", t.caret);
+    s.setProperty("--tf-error", t.error);
+    s.setProperty("--tf-error-extra", t.errorExtra);
+    s.setProperty("--tf-line", t.line);
+    localStorage.setItem("typeflow-theme", t.name);
+  }, [theme]);
+
   const isExtraLetter = (wordIdx: number, letterIdx: number, targetWord?: string): boolean => {
     if (wordIdx !== currentWordIndex) return false;
     const target = targetWord ?? words[wordIdx] ?? "";
@@ -389,251 +465,230 @@ export default function Home() {
   const endWordIndex = Math.min(visibleWords.length, startWordIndex + 20);
 
   return (
-    <main className="min-h-screen flex flex-col items-center bg-[#323437] text-[#d1d1d1]">
-      <div className="w-full max-w-5xl px-4 py-6">
-        <header className="flex justify-between items-start mb-8">
-          <div className="flex gap-4">
-            <div className="text-center">
-              <div className="text-xs text-[#646566] uppercase tracking-wider mb-1">punctuation</div>
-              <button
-                onClick={() => setPunctuation(!punctuation)}
-                className={`w-12 h-6 rounded-full transition-all duration-200 ${
-                  punctuation ? "bg-[#e2b714] shadow-[0_0_8px_rgba(226,183,20,0.4)]" : "bg-[#3c3e41]"
-                }`}
-              >
-                <div className={`w-5 h-5 bg-white rounded-full transition-transform duration-200 shadow-sm ${
-                  punctuation ? "translate-x-6" : "translate-x-0.5"
-                }`} />
-              </button>
-            </div>
-            <div className="text-center">
-              <div className="text-xs text-[#646566] uppercase tracking-wider mb-1">numbers</div>
-              <button
-                onClick={() => setNumbers(!numbers)}
-                className={`w-12 h-6 rounded-full transition-all duration-200 ${
-                  numbers ? "bg-[#e2b714] shadow-[0_0_8px_rgba(226,183,20,0.4)]" : "bg-[#3c3e41]"
-                }`}
-              >
-                <div className={`w-5 h-5 bg-white rounded-full transition-transform duration-200 shadow-sm ${
-                  numbers ? "translate-x-6" : "translate-x-0.5"
-                }`} />
-              </button>
-            </div>
-          </div>
+    <>
+      <main className="min-h-screen flex flex-col bg-bg text-sub">
 
-          <nav className="flex gap-1 bg-[#2c2e31] p-1 rounded-lg">
-            {(["time", "words", "quote", "zen", "custom"] as Mode[]).map(m => (
-              <button
-                key={m}
-                onClick={() => setMode(m)}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
-                  mode === m
-                    ? "bg-[#e2b714] text-[#323437] shadow-sm"
-                    : "text-[#646566] hover:text-[#d1d1d1]"
-                }`}
-              >
-                {m}
-              </button>
-            ))}
-          </nav>
+        {/* 1. TOP HEADER */}
+        <div className="w-full max-w-7xl mx-auto px-2 sm:px-4 pt-6">
+          <header className="flex justify-center items-center mb-10 text-sub text-sm font-medium">
+            <div className="flex items-center gap-4 flex-wrap justify-center">
 
-          <div className="flex gap-2 items-center">
-            <button
-              onClick={() => setSound(!sound)}
-              className={`px-3 py-1.5 rounded-md text-sm transition-all duration-200 ${
-                sound
-                  ? "bg-[#e2b714] text-[#323437]"
-                  : "text-[#646566] hover:text-[#d1d1d1]"
-              }`}
-              title="Toggle sound"
-            >
-              {sound ? "🔊" : "🔇"}
-            </button>
-            {mode === "time" && (
-              <>
-                {TIME_OPTIONS.map(t => (
-                  <button
-                    key={t}
-                    onClick={() => { setTimeMode(t); setCustomTime(""); }}
-                    className={`px-3 py-1.5 rounded-md text-sm transition-all duration-200 ${
-                      timeMode === t && !customTime
-                        ? "bg-[#e2b714] text-[#323437] shadow-sm"
-                        : "text-[#646566] hover:text-[#d1d1d1]"
-                    }`}
-                  >
-                    {t}
-                  </button>
-                ))}
-                <input
-                  type="number"
-                  value={customTime}
-                  onChange={(e) => setCustomTime(e.target.value)}
-                  placeholder="custom"
-                  className="w-16 px-2 py-1.5 rounded-md text-sm bg-[#2c2e31] text-[#d1d1d1] border border-[#3c3e41] focus:outline-none focus:border-[#e2b714] transition-colors"
-                />
-              </>
-            )}
-            {mode === "words" && (
-              <>
-                {WORD_OPTIONS.map(w => (
-                  <button
-                    key={w}
-                    onClick={() => { setWordMode(w); setCustomWords(""); }}
-                    className={`px-3 py-1.5 rounded-md text-sm transition-all duration-200 ${
-                      wordMode === w && !customWords
-                        ? "bg-[#e2b714] text-[#323437] shadow-sm"
-                        : "text-[#646566] hover:text-[#d1d1d1]"
-                    }`}
-                  >
-                    {w}
-                  </button>
-                ))}
-                <input
-                  type="number"
-                  value={customWords}
-                  onChange={(e) => setCustomWords(e.target.value)}
-                  placeholder="custom"
-                  className="w-16 px-2 py-1.5 rounded-md text-sm bg-[#2c2e31] text-[#d1d1d1] border border-[#3c3e41] focus:outline-none focus:border-[#e2b714] transition-colors"
-                />
-              </>
-            )}
-            {mode === "quote" && (
-              <>
-                {QUOTE_OPTIONS.map(q => (
-                  <button
-                    key={q}
-                    onClick={() => setQuoteMode(q)}
-                    className={`px-3 py-1.5 rounded-md text-sm transition-all duration-200 ${
-                      quoteMode === q
-                        ? "bg-[#e2b714] text-[#323437] shadow-sm"
-                        : "text-[#646566] hover:text-[#d1d1d1]"
-                    }`}
-                  >
-                    {q}
-                  </button>
-                ))}
-              </>
-            )}
-          </div>
-        </header>
-
-        <div className="relative">
-          <div
-            id="test"
-            className="mx-auto text-2xl leading-relaxed font-mono select-none"
-          >
-            {!isTestFinished && mode === "quote" && currentQuote ? (
-              <div className="text-center">
-                <div className="text-xl mb-4 text-[#d1d1d1]">
-                  {currentQuote.text.split("").map((letter, idx) => {
-                    let letterClass = "";
-                    if (idx < currentInput.length) {
-                      letterClass = currentInput[idx] === letter ? "correct" : "incorrect";
-                    } else if (idx === currentInput.length) {
-                      letterClass = "active";
-                    }
-                    return (
-                      <span key={idx} className={`letter ${letterClass}`}>
-                        {letter === " " ? "\u00A0" : letter}
-                      </span>
-                    );
-                  })}
-                </div>
-                <div className="text-sm text-[#646566]">— {currentQuote.author}</div>
-              </div>
-            ) : !isTestFinished && visibleWords.length > 0 ? (
-              <div>
-                {visibleWords.slice(startWordIndex, endWordIndex).map((word, idx) => {
-                  const actualIdx = startWordIndex + idx;
-                  return (
-                    <span key={actualIdx} className="word">
-                      {word.split("").map((letter, letterIdx) => (
-                        <span
-                          key={letterIdx}
-                          className={`letter ${getLetterClass(actualIdx, letterIdx, letter, word)} ${isExtraLetter(actualIdx, letterIdx, word) ? "extra" : ""}`}
-                        >
-                          {letter}
-                        </span>
-                      ))}
-                    </span>
-                  );
-                })}
-              </div>
-            ) : isTestFinished && result ? (
-              <div id="result" className="text-center py-12">
-                <div className="text-6xl font-bold mb-2 text-[#e2b714]">{result.wpm}</div>
-                <div className="text-lg text-[#646566] mb-8">wpm</div>
-                <div className="flex justify-center gap-2 mb-8">
-                  <div className="stat">
-                    <div className="stat-value text-[#e2b714]">{result.rawWpm}</div>
-                    <div className="stat-label">raw</div>
-                  </div>
-                  <div className="stat">
-                    <div className="stat-value text-[#e2b714]">{result.accuracy}%</div>
-                    <div className="stat-label">accuracy</div>
-                  </div>
-                  <div className="stat">
-                    <div className="stat-value text-[#e2b714]">{result.characters}</div>
-                    <div className="stat-label">chars</div>
-                  </div>
-                  <div className="stat">
-                    <div className="stat-value text-[#e2b714]">{result.correctChars}</div>
-                    <div className="stat-label">correct</div>
-                  </div>
-                  <div className="stat">
-                    <div className="stat-value text-[#e2b714]">{result.incorrectChars}</div>
-                    <div className="stat-label">incorrect</div>
-                  </div>
-                </div>
-                <div className="flex justify-center gap-4 text-sm text-[#646566]">
-                  <div><span className="text-[#e2b714]">+</span> {result.extraChars} extra</div>
-                  <div><span className="text-[#e2b714]">-</span> {result.missedChars} missed</div>
-                  <div>time: <span className="text-[#e2b714]">{result.time}s</span></div>
-                </div>
-                <button
-                  onClick={handleRestart}
-                  className="mt-8 px-6 py-2 bg-[#e2b714] text-[#323437] rounded-md font-medium hover:bg-[#d4a813] transition-colors shadow-sm"
-                >
-                  restart
+              {/* LEFT: Punctuation & Numbers */}
+              <div className="flex gap-6 items-center bg-sub-alt rounded-lg px-6 py-3">
+                <button onClick={() => setPunctuation(!punctuation)} className={`flex items-center gap-2 hover:text-main transition-colors ${punctuation ? "text-caret" : ""}`} title="Toggle punctuation">
+                  <i className="fas fa-at"></i>
+                  <span className="hidden sm:inline">punctuation</span>
+                </button>
+                <button onClick={() => setNumbers(!numbers)} className={`flex items-center gap-2 hover:text-main transition-colors ${numbers ? "text-caret" : ""}`} title="Toggle numbers">
+                  <i className="fas fa-hashtag"></i>
+                  <span className="hidden sm:inline">numbers</span>
                 </button>
               </div>
-            ) : (
-              <div className="text-center text-[#646566] text-xl">
-                Start typing to begin the test
-              </div>
-            )}
-          </div>
 
-          {isPaused && (
-            <div className="absolute inset-0 flex items-center justify-center bg-[#323437]/80 backdrop-blur-sm rounded-lg">
-              <div className="text-center">
-                <div className="text-4xl font-bold text-[#e2b714] mb-4">Paused</div>
-                <div className="text-lg text-[#d1d1d1]">Click or press any key to resume</div>
+              {/* MIDDLE: Modes */}
+              <nav className="flex gap-6 items-center bg-sub-alt rounded-lg px-6 py-3">
+                {(["time", "words", "quote", "zen", "custom"] as Mode[]).map((m) => (
+                  <button
+                    key={m}
+                    onClick={() => setMode(m)}
+                    className={`flex items-center gap-2 hover:text-main transition-colors ${mode === m ? "text-caret" : ""
+                      }`}
+                  >
+                    <i className={`${MODE_ICONS[m]} text-[13px]`} aria-hidden="true"></i>
+                    {m}
+                  </button>
+                ))}
+              </nav>
+
+              {/* RIGHT: Time/Word Options & Custom Input */}
+              <div className="flex gap-5 items-center bg-sub-alt rounded-lg px-6 py-3">
+                {mode === "time" && (
+                  <>
+                    {TIME_OPTIONS.map((t) => (
+                      <button key={t} onClick={() => { setTimeMode(t); setCustomTime(""); }} className={`hover:text-main transition-colors ${timeMode === t && !customTime ? "text-caret" : ""}`}>{t}</button>
+                    ))}
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs opacity-50"><i className="fas fa-tools"></i></span>
+                      <input type="number" value={customTime} onChange={(e) => setCustomTime(e.target.value)} placeholder="custom" className="w-16 bg-transparent border-b border-line focus:border-caret focus:outline-none transition-colors text-right" />
+                    </div>
+                  </>
+                )}
+                {mode === "words" && (
+                  <>
+                    {WORD_OPTIONS.map((w) => (
+                      <button key={w} onClick={() => { setWordMode(w); setCustomWords(""); }} className={`hover:text-main transition-colors ${wordMode === w && !customWords ? "text-caret" : ""}`}>{w}</button>
+                    ))}
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs opacity-50">⚙️</span>
+                      <input type="number" value={customWords} onChange={(e) => setCustomWords(e.target.value)} placeholder="custom" className="w-16 bg-transparent border-b border-line focus:border-caret focus:outline-none transition-colors text-right" />
+                    </div>
+                  </>
+                )}
+                {mode === "quote" && (
+                  <>
+                    {QUOTE_OPTIONS.map((q) => (
+                      <button key={q} onClick={() => setQuoteMode(q)} className={`hover:text-main transition-colors ${quoteMode === q ? "text-caret" : ""}`}>{q}</button>
+                    ))}
+                  </>
+                )}
               </div>
+
+              {/* FAR RIGHT: Sound */}
+              <div className="flex items-center gap-4 bg-sub-alt rounded-lg px-4 py-3">
+                <button onClick={() => setSound(!sound)} className={`hover:text-main transition-colors ${sound ? "text-caret" : ""}`} title="Toggle sound">
+                  <i className={`fas ${sound ? "fa-volume-high" : "fa-volume-xmark"}`}></i>
+                </button>
+              </div>
+
             </div>
-          )}
+          </header>
         </div>
 
-        <div className="flex justify-between items-center mt-6 text-sm text-[#646566]">
-          <div>
-            {isTestActive && !isPaused && mode === "time" && (
-              <span>
-                {customTime ? `${timer} / ${customTime}` : `${timer} / ${timeMode}`}
-              </span>
-            )}
-            {isTestActive && !isPaused && mode === "words" && (
-              <span>
-                {currentWordIndex} / {words.length}
-              </span>
-            )}
-          </div>
-          <div>
-            {isTestActive && !isPaused && liveWpm > 0 && (
-              <span className="text-[#e2b714] font-medium">{liveWpm} wpm</span>
-            )}
+        {/* 2. MIDDLE TEST AREA (flex-1 pushes this to the exact vertical center) */}
+        <div className="flex-1 flex items-center justify-center w-full">
+          <div className="w-full px-6 md:px-[8vw] relative">
+            <div id="test" className="mx-auto select-none">
+
+              {!isTestFinished && mode === "quote" && currentQuote ? (
+                <div className="text-center">
+                  <div className="text-xl mb-4 text-main">
+                    {currentQuote.text.split("").map((letter, idx) => {
+                      let letterClass = "";
+                      if (idx < currentInput.length) letterClass = currentInput[idx] === letter ? "correct" : "incorrect";
+                      else if (idx === currentInput.length) letterClass = "active";
+                      return <span key={idx} className={`letter ${letterClass}`}>{letter === " " ? "\u00A0" : letter}</span>;
+                    })}
+                  </div>
+                  <div className="text-sm text-sub">— {currentQuote.author}</div>
+                </div>
+              ) : !isTestFinished && visibleWords.length > 0 ? (
+                /* --- NEW 3-LINE WRAPPER LOGIC --- */
+                <div id="test-wrapper">
+                  <div
+                    id="test-inner"
+                    key={`text-${contentVersion}`}
+                    className="words-fade"
+                    style={{ transform: `translateY(-${translateY}rem)` }}
+                  >
+                    {visibleWords.map((word, idx) => (
+                      <span
+                        key={idx}
+                        className="word"
+                        ref={el => { if (el) wordRefs.current[idx] = el; }}
+                      >
+                        {word.split("").map((letter, letterIdx) => (
+                          <span
+                            key={letterIdx}
+                            className={`letter ${getLetterClass(idx, letterIdx, letter, word)} ${isExtraLetter(idx, letterIdx, word) ? "extra" : ""}`}
+                          >
+                            {letter}
+                          </span>
+                        ))}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ) : isTestFinished && result ? (
+                <div id="result" className="text-center py-12">
+                  <div className="text-6xl font-bold mb-2 text-caret">{result.wpm}</div>
+                  <div className="text-lg text-sub mb-8">wpm</div>
+                  <div className="flex justify-center gap-2 mb-8">
+                    <div className="stat"><div className="stat-value text-caret">{result.rawWpm}</div><div className="stat-label">raw</div></div>
+                    <div className="stat"><div className="stat-value text-caret">{result.accuracy}%</div><div className="stat-label">accuracy</div></div>
+                    <div className="stat"><div className="stat-value text-caret">{result.characters}</div><div className="stat-label">chars</div></div>
+                    <div className="stat"><div className="stat-value text-caret">{result.correctChars}</div><div className="stat-label">correct</div></div>
+                    <div className="stat"><div className="stat-value text-caret">{result.incorrectChars}</div><div className="stat-label">incorrect</div></div>
+                  </div>
+                  <div className="flex justify-center gap-4 text-sm text-sub">
+                    <div><span className="text-caret">+</span> {result.extraChars} extra</div>
+                    <div><span className="text-caret">-</span> {result.missedChars} missed</div>
+                    <div>time: <span className="text-caret">{result.time}s</span></div>
+                  </div>
+                  <button onClick={handleRestart} className="mt-8 px-6 py-2 bg-caret text-bg rounded-md font-medium hover:opacity-90 transition-colors shadow-sm">restart</button>
+                </div>
+              ) : (
+                <div className="text-center text-sub text-xl">Start typing to begin the test</div>
+              )}
+            </div>
           </div>
         </div>
-      </div>
-    </main>
+
+        {/* 3. BOTTOM STATS */}
+        <div className="w-full px-6 md:px-[8vw] pb-6">
+
+          {/* KEYBOARD HINTS (exactly like monkeytype) */}
+          <div className="flex flex-col items-center gap-2 mb-8 text-xs text-sub">
+            <div className="flex items-center gap-2">
+              <kbd className="key-hint">escape</kbd>
+              <span>- restart test</span>
+            </div>
+          </div>
+          <div className="flex justify-between items-center mt-6 text-sm text-sub">
+            <div>
+              {isTestActive && !isPaused && mode === "time" && (
+                <span>{customTime ? `${timer} / ${customTime}` : `${timer} / ${timeMode}`}</span>
+              )}
+              {isTestActive && !isPaused && mode === "words" && (
+                <span>{currentWordIndex} / {words.length}</span>
+              )}
+            </div>
+            <div>
+              {isTestActive && !isPaused && liveWpm > 0 && (
+                <span className="text-caret font-medium">{liveWpm} wpm</span>
+              )}
+            </div>
+          </div>
+          <div className="flex justify-end items-center gap-2 mt-3 text-xs text-sub">
+            <i className="fas fa-palette text-caret"></i>
+            <button onClick={() => setShowThemeModal(true)} className="hover:text-main transition-colors">
+              {theme}
+            </button>
+          </div>
+        </div>
+      </main>
+      {/* THEME SWITCHER MODAL */}
+      {showThemeModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-start justify-center pt-[12vh] bg-black/50"
+          onClick={() => setShowThemeModal(false)}
+        >
+          <div
+            className="w-full max-w-2xl mx-4 bg-sub-alt rounded-lg shadow-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3 px-5 py-4">
+              <i className="fas fa-magnifying-glass text-sub"></i>
+              <input
+                autoFocus
+                value={themeSearch}
+                onChange={(e) => setThemeSearch(e.target.value)}
+                placeholder="Theme..."
+                className="flex-1 bg-transparent text-main placeholder:text-sub font-mono text-sm focus:outline-none"
+              />
+            </div>
+            <div className="max-h-[50vh] overflow-y-auto pb-2">
+              {THEMES.filter((t) => t.name.toLowerCase().includes(themeSearch.toLowerCase())).map((t) => (
+                <button
+                  key={t.name}
+                  onClick={() => setTheme(t.name)}
+                  className={`w-full flex items-center justify-between px-5 py-2.5 font-mono text-sm transition-colors ${theme === t.name ? "bg-main text-bg" : "text-sub hover:text-main hover:bg-line/30"
+                    }`}
+                >
+                  <span className="flex items-center gap-3">
+                    {theme === t.name && <i className="fas fa-check"></i>}
+                    {t.name}
+                  </span>
+                  <span className="flex gap-1.5">
+                    <span className="w-4 h-4 rounded-full" style={{ background: t.caret }} />
+                    <span className="w-4 h-4 rounded-full" style={{ background: t.sub }} />
+                    <span className="w-4 h-4 rounded-full" style={{ background: t.main }} />
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
