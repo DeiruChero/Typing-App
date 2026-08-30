@@ -506,87 +506,136 @@ export default function Home() {
 
   return (
     <>
-      <main className="min-h-screen flex flex-col bg-bg text-sub">
+      <main className="min-h-screen flex flex-col bg-bg text-sub relative">
 
-        {/* 1. TOP HEADER */}
-        <div className="w-full max-w-7xl mx-auto px-2 sm:px-4 pt-6">
-          <header className="flex justify-center items-center mb-10 text-sub text-sm font-medium">
-            <div className="flex items-center gap-4 flex-wrap justify-center">
+        {/* 1. TOP HEADER — pinned to top, out of layout flow */}
+        <div className="absolute top-0 left-0 right-0 z-10">
+          <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 pt-6">
+            <header className="mb-10 text-sub text-sm font-medium w-full">
 
-              {/* LEFT: Punctuation & Numbers */}
-              <div className="flex gap-6 items-center bg-sub-alt rounded-lg px-6 py-3">
-                <button onClick={() => setPunctuation(!punctuation)} className={`flex items-center gap-2 hover:text-main transition-colors ${punctuation ? "text-caret" : ""}`} title="Toggle punctuation">
-                  <i className="fas fa-at"></i>
-                  <span className="hidden sm:inline">punctuation</span>
-                </button>
-                <button onClick={() => setNumbers(!numbers)} className={`flex items-center gap-2 hover:text-main transition-colors ${numbers ? "text-caret" : ""}`} title="Toggle numbers">
-                  <i className="fas fa-hashtag"></i>
-                  <span className="hidden sm:inline">numbers</span>
-                </button>
+              {/* ROW 1: LOGO — pinned top-left, exactly like monkeytype */}
+              <div
+                className="flex items-center gap-3 cursor-pointer group select-none w-fit mb-8"
+                onClick={initTest}
+                title="Restart test (or press Tab)"
+              >
+                {/* 🎹 KEYBOARD SVG */}
+                <svg width="45" height="32" viewBox="0 0 80 60" className="flex-shrink-0 transition-transform duration-200 group-hover:scale-105 drop-shadow-md">
+                  {/* Keyboard Base (Chassis) */}
+                  <rect x="1" y="6" width="78" height="48" rx="4" fill="var(--tf-sub-alt)" stroke="var(--tf-sub)" strokeWidth="1.5" />
+
+                  {/* Row 1 (Top) */}
+                  <rect x="4" y="12" width="10" height="7" rx="1.5" fill="var(--tf-line)" />
+                  <rect x="16" y="12" width="10" height="7" rx="1.5" fill="var(--tf-line)" />
+                  <rect x="28" y="12" width="10" height="7" rx="1.5" fill="var(--tf-line)" />
+                  <rect x="40" y="12" width="10" height="7" rx="1.5" fill="var(--tf-line)" />
+                  <rect x="52" y="12" width="10" height="7" rx="1.5" fill="var(--tf-line)" />
+                  <rect x="64" y="12" width="10" height="7" rx="1.5" fill="var(--tf-line)" />
+
+                  {/* Row 2 (Middle - 't' and 'F' keys) */}
+                  <rect x="6" y="21" width="10" height="7" rx="1.5" fill="var(--tf-line)" />
+                  <rect x="14" y="21" width="10" height="7" rx="1.5" fill="var(--tf-caret)" />
+                  <text x="19" y="27" fontFamily="system-ui, sans-serif" fontSize="5.5" fontWeight="800" fill="var(--tf-bg)" textAnchor="middle">t</text>
+                  <rect x="30" y="21" width="10" height="7" rx="1.5" fill="var(--tf-line)" />
+                  <rect x="46" y="21" width="10" height="7" rx="1.5" fill="var(--tf-main)" />
+                  <text x="51" y="27" fontFamily="system-ui, sans-serif" fontSize="5.5" fontWeight="800" fill="var(--tf-bg)" textAnchor="middle">F</text>
+                  <rect x="62" y="21" width="10" height="7" rx="1.5" fill="var(--tf-line)" />
+
+                  {/* Row 3 (Bottom) */}
+                  <rect x="8" y="30" width="10" height="7" rx="1.5" fill="var(--tf-line)" />
+                  <rect x="20" y="30" width="10" height="7" rx="1.5" fill="var(--tf-line)" />
+                  <rect x="32" y="30" width="10" height="7" rx="1.5" fill="var(--tf-line)" />
+                  <rect x="44" y="30" width="10" height="7" rx="1.5" fill="var(--tf-line)" />
+                  <rect x="56" y="30" width="10" height="7" rx="1.5" fill="var(--tf-line)" />
+
+                  {/* Row 4 (Spacebar) */}
+                  <rect x="20" y="39" width="40" height="7" rx="2" fill="var(--tf-line)" />
+                </svg>
+
+                {/* TEXT BLOCK: tagline above the name, exactly like "monkey see" above "monkeytype" */}
+                <div className="flex flex-col">
+                  <span className="text-xs text-sub leading-none ms-2 tracking-wide">type in flow</span>
+                  <span className="text-4xl font-bold text-main tracking-wider leading-none">typeflow</span>
+                </div>
               </div>
 
-              {/* MIDDLE: Modes */}
-              <nav className="flex gap-6 items-center bg-sub-alt rounded-lg px-6 py-3">
-                {(["time", "words", "quote", "zen", "custom"] as Mode[]).map((m) => (
-                  <button
-                    key={m}
-                    onClick={() => setMode(m)}
-                    className={`flex items-center gap-2 hover:text-main transition-colors ${mode === m ? "text-caret" : ""
-                      }`}
-                  >
-                    <i className={`${MODE_ICONS[m]} text-[13px]`} aria-hidden="true"></i>
-                    {m}
+              {/* ROW 2: CONFIG WIDGETS — centered on their own line, exactly like monkeytype */}
+              <div className="flex items-center gap-4 flex-wrap justify-center">
+
+                {/* LEFT: Punctuation & Numbers */}
+                <div className="flex gap-4 items-center bg-sub-alt rounded-lg px-5 py-2.5">
+                  <button onClick={() => setPunctuation(!punctuation)} className={`flex items-center gap-2 hover:text-main transition-colors ${punctuation ? "text-caret" : ""}`} title="Toggle punctuation">
+                    <i className="fas fa-at"></i>
+                    <span className="hidden sm:inline">punctuation</span>
                   </button>
-                ))}
-              </nav>
+                  <button onClick={() => setNumbers(!numbers)} className={`flex items-center gap-2 hover:text-main transition-colors ${numbers ? "text-caret" : ""}`} title="Toggle numbers">
+                    <i className="fas fa-hashtag"></i>
+                    <span className="hidden sm:inline">numbers</span>
+                  </button>
+                </div>
 
-              {/* RIGHT: Time/Word Options & Custom Input */}
-              <div className="flex gap-5 items-center bg-sub-alt rounded-lg px-6 py-3">
-                {mode === "time" && (
-                  <>
-                    {TIME_OPTIONS.map((t) => (
-                      <button key={t} onClick={() => { setTimeMode(t); setCustomTime(""); }} className={`hover:text-main transition-colors ${timeMode === t && !customTime ? "text-caret" : ""}`}>{t}</button>
-                    ))}
-                    <div className="flex items-center gap-1">
-                      <span className="text-xs opacity-50"><i className="fas fa-tools"></i></span>
-                      <input type="number" value={customTime} onChange={(e) => setCustomTime(e.target.value)} placeholder="custom" className="w-16 bg-transparent border-b border-line focus:border-caret focus:outline-none transition-colors text-right" />
-                    </div>
-                  </>
-                )}
-                {mode === "words" && (
-                  <>
-                    {WORD_OPTIONS.map((w) => (
-                      <button key={w} onClick={() => { setWordMode(w); setCustomWords(""); }} className={`hover:text-main transition-colors ${wordMode === w && !customWords ? "text-caret" : ""}`}>{w}</button>
-                    ))}
-                    <div className="flex items-center gap-1">
-                      <span className="text-xs opacity-50">⚙️</span>
-                      <input type="number" value={customWords} onChange={(e) => setCustomWords(e.target.value)} placeholder="custom" className="w-16 bg-transparent border-b border-line focus:border-caret focus:outline-none transition-colors text-right" />
-                    </div>
-                  </>
-                )}
-                {mode === "quote" && (
-                  <>
-                    {QUOTE_OPTIONS.map((q) => (
-                      <button key={q} onClick={() => setQuoteMode(q)} className={`hover:text-main transition-colors ${quoteMode === q ? "text-caret" : ""}`}>{q}</button>
-                    ))}
-                  </>
-                )}
+                {/* MIDDLE: Modes */}
+                <nav className="flex gap-4 items-center bg-sub-alt rounded-lg px-5 py-2.5">
+                  {(["time", "words", "quote", "zen", "custom"] as Mode[]).map((m) => (
+                    <button
+                      key={m}
+                      onClick={() => setMode(m)}
+                      className={`flex items-center gap-2 hover:text-main transition-colors ${mode === m ? "text-caret" : ""}`}
+                    >
+                      <i className={`${MODE_ICONS[m]} text-[13px]`} aria-hidden="true"></i>
+                      {m}
+                    </button>
+                  ))}
+                </nav>
+
+                {/* RIGHT: Time/Word Options & Custom Input */}
+                <div className="flex gap-4 items-center bg-sub-alt rounded-lg px-5 py-2.5">
+                  {mode === "time" && (
+                    <>
+                      {TIME_OPTIONS.map((t) => (
+                        <button key={t} onClick={() => { setTimeMode(t); setCustomTime(""); }} className={`hover:text-main transition-colors ${timeMode === t && !customTime ? "text-caret" : ""}`}>{t}</button>
+                      ))}
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs opacity-50"><i className="fas fa-tools"></i></span>
+                        <input type="number" value={customTime} onChange={(e) => setCustomTime(e.target.value)} placeholder="custom" className="w-14 bg-transparent border-b border-line focus:border-caret focus:outline-none transition-colors text-right" />
+                      </div>
+                    </>
+                  )}
+                  {mode === "words" && (
+                    <>
+                      {WORD_OPTIONS.map((w) => (
+                        <button key={w} onClick={() => { setWordMode(w); setCustomWords(""); }} className={`hover:text-main transition-colors ${wordMode === w && !customWords ? "text-caret" : ""}`}>{w}</button>
+                      ))}
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs opacity-50">⚙️</span>
+                        <input type="number" value={customWords} onChange={(e) => setCustomWords(e.target.value)} placeholder="custom" className="w-14 bg-transparent border-b border-line focus:border-caret focus:outline-none transition-colors text-right" />
+                      </div>
+                    </>
+                  )}
+                  {mode === "quote" && (
+                    <>
+                      {QUOTE_OPTIONS.map((q) => (
+                        <button key={q} onClick={() => setQuoteMode(q)} className={`hover:text-main transition-colors ${quoteMode === q ? "text-caret" : ""}`}>{q}</button>
+                      ))}
+                    </>
+                  )}
+                </div>
+
+                {/* FAR RIGHT: Sound */}
+                <div className="flex items-center gap-3 bg-sub-alt rounded-lg px-4 py-2.5">
+                  <button onClick={() => setSound(!sound)} className={`hover:text-main transition-colors ${sound ? "text-caret" : ""}`} title="Toggle sound">
+                    <i className={`fas ${sound ? "fa-volume-high" : "fa-volume-xmark"}`}></i>
+                  </button>
+                </div>
+
               </div>
-
-              {/* FAR RIGHT: Sound */}
-              <div className="flex items-center gap-4 bg-sub-alt rounded-lg px-4 py-3">
-                <button onClick={() => setSound(!sound)} className={`hover:text-main transition-colors ${sound ? "text-caret" : ""}`} title="Toggle sound">
-                  <i className={`fas ${sound ? "fa-volume-high" : "fa-volume-xmark"}`}></i>
-                </button>
-              </div>
-
-            </div>
-          </header>
+            </header>
+          </div>
         </div>
 
         {/* 2. MIDDLE TEST AREA (flex-1 pushes this to the exact vertical center) */}
         <div className="flex-1 flex items-center justify-center w-full">
-          <div className="w-full px-6 md:px-[8vw] relative">
+          <div className="w-full px-6 md:px-[8vw] relative -translate-y-[4vh]">
             {/* LIVE COUNTDOWN TIMER (monkeytype style, top-left of the words) */}
             {mode === "time" && targetTime > 0 && (
               <div
@@ -664,33 +713,35 @@ export default function Home() {
           </div>
         </div>
 
-        {/* 3. BOTTOM STATS */}
-        <div className="w-full px-6 md:px-[8vw] pb-6">
+        {/* 3. BOTTOM STATS — pinned to bottom, out of layout flow */}
+        <div className="absolute bottom-0 left-0 right-0">
+          <div className="w-full px-6 md:px-[8vw] pb-6">
 
-          {/* KEYBOARD HINTS (exactly like monkeytype) */}
-          <div className="flex flex-col items-center gap-2 mb-8 text-xs text-sub">
-            <div className="flex items-center gap-2">
-              <kbd className="key-hint">escape</kbd>
-              <span>- restart test</span>
+            {/* KEYBOARD HINTS (exactly like monkeytype) */}
+            <div className="flex flex-col items-center gap-2 mb-8 text-xs text-sub">
+              <div className="flex items-center gap-2">
+                <kbd className="key-hint">escape or tab</kbd>
+                <span>- restart test</span>
+              </div>
             </div>
-          </div>
-          <div className="flex justify-between items-center mt-6 text-sm text-sub">
-            <div>
-              {isTestActive && !isPaused && mode === "words" && (
-                <span>{currentWordIndex} / {words.length}</span>
-              )}
+            <div className="flex justify-between items-center mt-6 text-sm text-sub">
+              <div>
+                {isTestActive && !isPaused && mode === "words" && (
+                  <span>{currentWordIndex} / {words.length}</span>
+                )}
+              </div>
+              <div>
+                {isTestActive && !isPaused && liveWpm > 0 && (
+                  <span className="text-caret font-medium">{liveWpm} wpm</span>
+                )}
+              </div>
             </div>
-            <div>
-              {isTestActive && !isPaused && liveWpm > 0 && (
-                <span className="text-caret font-medium">{liveWpm} wpm</span>
-              )}
+            <div className="flex justify-end items-center gap-2 mt-3 text-xs text-sub">
+              <i className="fas fa-palette text-caret"></i>
+              <button onClick={() => setShowThemeModal(true)} className="hover:text-main transition-colors">
+                {theme}
+              </button>
             </div>
-          </div>
-          <div className="flex justify-end items-center gap-2 mt-3 text-xs text-sub">
-            <i className="fas fa-palette text-caret"></i>
-            <button onClick={() => setShowThemeModal(true)} className="hover:text-main transition-colors">
-              {theme}
-            </button>
           </div>
         </div>
       </main>
