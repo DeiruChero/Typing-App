@@ -44,6 +44,8 @@ export default function Home() {
 
   const testContainerRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const [translateY, setTranslateY] = useState<number>(0);
+  const wordRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const inputHistoryRef = useRef<string[][]>([]);
   const wordsRef = useRef<string[]>([]);
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -359,6 +361,39 @@ export default function Home() {
     return "";
   };
 
+  const calculateLineShift = useCallback(() => {
+    if (mode === "quote" || isTestFinished) return;
+
+    const currentWordEl = wordRefs.current[currentWordIndex];
+    const firstWordEl = wordRefs.current[0];
+
+    if (!currentWordEl || !firstWordEl) return;
+
+    const computedStyle = window.getComputedStyle(currentWordEl);
+    let lineHeightPx = parseFloat(computedStyle.lineHeight);
+    if (isNaN(lineHeightPx)) lineHeightPx = 56; // Fallback to 3.5rem (56px)
+
+    // Calculate which line index (0, 1, 2, 3...) the current word is on
+    const lineIndex = Math.round((currentWordEl.offsetTop - firstWordEl.offsetTop) / lineHeightPx);
+
+    // If it's on the 4th line (index 3) or below, shift the container up
+    if (lineIndex >= 3) {
+      const shiftLines = lineIndex - 2; // Keep it on the 3rd visual line
+      setTranslateY(shiftLines * 3.5); // 3.5rem per line
+    } else {
+      setTranslateY(0);
+    }
+  }, [currentWordIndex, mode, isTestFinished]);
+
+  useEffect(() => {
+    calculateLineShift();
+  }, [calculateLineShift]);
+
+  useEffect(() => {
+    window.addEventListener("resize", calculateLineShift);
+    return () => window.removeEventListener("resize", calculateLineShift);
+  }, [calculateLineShift]);
+
   const isExtraLetter = (wordIdx: number, letterIdx: number, targetWord?: string): boolean => {
     if (wordIdx !== currentWordIndex) return false;
     const target = targetWord ?? words[wordIdx] ?? "";
@@ -379,235 +414,149 @@ export default function Home() {
   const endWordIndex = Math.min(visibleWords.length, startWordIndex + 20);
 
   return (
-    <main className="min-h-screen flex flex-col items-center bg-[#323437] text-[#d1d1d1]">
-      <div className="w-full max-w-5xl px-4 py-6">
+    <main className="min-h-screen flex flex-col bg-[#323437] text-[#d1d1d1]">
+
+      {/* 1. TOP HEADER */}
+      <div className="w-full max-w-7xl mx-auto px-2 sm:px-4 pt-6">
         <header className="flex justify-center items-center mb-10 text-[#646566] text-sm font-medium">
-          <div className="flex items-center gap-8">
+          <div className="flex items-center gap-4 flex-wrap justify-center">
 
             {/* LEFT: Punctuation & Numbers */}
-            <div className="flex gap-6 items-center">
-              <button
-                onClick={() => setPunctuation(!punctuation)}
-                className={`flex items-center gap-2 hover:text-[#d1d1d1] transition-colors ${punctuation ? "text-[#e2b714]" : ""
-                  }`}
-                title="Toggle punctuation"
-              >
+            <div className="flex gap-6 items-center bg-[#2c2e31] rounded-lg px-6 py-3">
+              <button onClick={() => setPunctuation(!punctuation)} className={`flex items-center gap-2 hover:text-[#d1d1d1] transition-colors ${punctuation ? "text-[#e2b714]" : ""}`} title="Toggle punctuation">
                 <span className="text-lg">@</span>
                 <span className="hidden sm:inline">punctuation</span>
               </button>
-              <button
-                onClick={() => setNumbers(!numbers)}
-                className={`flex items-center gap-2 hover:text-[#d1d1d1] transition-colors ${numbers ? "text-[#e2b714]" : ""
-                  }`}
-                title="Toggle numbers"
-              >
+              <button onClick={() => setNumbers(!numbers)} className={`flex items-center gap-2 hover:text-[#d1d1d1] transition-colors ${numbers ? "text-[#e2b714]" : ""}`} title="Toggle numbers">
                 <span className="text-lg">#</span>
                 <span className="hidden sm:inline">numbers</span>
               </button>
             </div>
 
-            <div className="h-5 w-px bg-[#4a4b4e]"></div>
-
             {/* MIDDLE: Modes */}
-            <nav className="flex gap-6 items-center">
+            <nav className="flex gap-6 items-center bg-[#2c2e31] rounded-lg px-6 py-3">
               {(["time", "words", "quote", "zen", "custom"] as Mode[]).map((m) => (
-                <button
-                  key={m}
-                  onClick={() => setMode(m)}
-                  className={`hover:text-[#d1d1d1] transition-colors ${mode === m ? "text-[#e2b714]" : ""
-                    }`}
-                >
-                  {m}
-                </button>
+                <button key={m} onClick={() => setMode(m)} className={`hover:text-[#d1d1d1] transition-colors ${mode === m ? "text-[#e2b714]" : ""}`}>{m}</button>
               ))}
             </nav>
 
-            <div className="h-5 w-px bg-[#4a4b4e]"></div>
-
             {/* RIGHT: Time/Word Options & Custom Input */}
-            <div className="flex gap-5 items-center">
+            <div className="flex gap-5 items-center bg-[#2c2e31] rounded-lg px-6 py-3">
               {mode === "time" && (
                 <>
                   {TIME_OPTIONS.map((t) => (
-                    <button
-                      key={t}
-                      onClick={() => { setTimeMode(t); setCustomTime(""); }}
-                      className={`hover:text-[#d1d1d1] transition-colors ${timeMode === t && !customTime ? "text-[#e2b714]" : ""
-                        }`}
-                    >
-                      {t}
-                    </button>
+                    <button key={t} onClick={() => { setTimeMode(t); setCustomTime(""); }} className={`hover:text-[#d1d1d1] transition-colors ${timeMode === t && !customTime ? "text-[#e2b714]" : ""}`}>{t}</button>
                   ))}
                   <div className="flex items-center gap-1">
                     <span className="text-xs opacity-50">⚙️</span>
-                    <input
-                      type="number"
-                      value={customTime}
-                      onChange={(e) => setCustomTime(e.target.value)}
-                      placeholder="custom"
-                      className="w-16 bg-transparent border-b border-[#4a4b4e] focus:border-[#e2b714] focus:outline-none transition-colors text-right"
-                    />
+                    <input type="number" value={customTime} onChange={(e) => setCustomTime(e.target.value)} placeholder="custom" className="w-16 bg-transparent border-b border-[#4a4b4e] focus:border-[#e2b714] focus:outline-none transition-colors text-right" />
                   </div>
                 </>
               )}
-
               {mode === "words" && (
                 <>
                   {WORD_OPTIONS.map((w) => (
-                    <button
-                      key={w}
-                      onClick={() => { setWordMode(w); setCustomWords(""); }}
-                      className={`hover:text-[#d1d1d1] transition-colors ${wordMode === w && !customWords ? "text-[#e2b714]" : ""
-                        }`}
-                    >
-                      {w}
-                    </button>
+                    <button key={w} onClick={() => { setWordMode(w); setCustomWords(""); }} className={`hover:text-[#d1d1d1] transition-colors ${wordMode === w && !customWords ? "text-[#e2b714]" : ""}`}>{w}</button>
                   ))}
                   <div className="flex items-center gap-1">
                     <span className="text-xs opacity-50">⚙️</span>
-                    <input
-                      type="number"
-                      value={customWords}
-                      onChange={(e) => setCustomWords(e.target.value)}
-                      placeholder="custom"
-                      className="w-16 bg-transparent border-b border-[#4a4b4e] focus:border-[#e2b714] focus:outline-none transition-colors text-right"
-                    />
+                    <input type="number" value={customWords} onChange={(e) => setCustomWords(e.target.value)} placeholder="custom" className="w-16 bg-transparent border-b border-[#4a4b4e] focus:border-[#e2b714] focus:outline-none transition-colors text-right" />
                   </div>
                 </>
               )}
-
               {mode === "quote" && (
                 <>
                   {QUOTE_OPTIONS.map((q) => (
-                    <button
-                      key={q}
-                      onClick={() => setQuoteMode(q)}
-                      className={`hover:text-[#d1d1d1] transition-colors ${quoteMode === q ? "text-[#e2b714]" : ""
-                        }`}
-                    >
-                      {q}
-                    </button>
+                    <button key={q} onClick={() => setQuoteMode(q)} className={`hover:text-[#d1d1d1] transition-colors ${quoteMode === q ? "text-[#e2b714]" : ""}`}>{q}</button>
                   ))}
                 </>
               )}
             </div>
 
-            <div className="h-5 w-px bg-[#4a4b4e]"></div>
-
             {/* FAR RIGHT: Sound */}
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => setSound(!sound)}
-                className={`hover:text-[#d1d1d1] transition-colors ${sound ? "text-[#e2b714]" : ""
-                  }`}
-                title="Toggle sound"
-              >
+            <div className="flex items-center gap-4 bg-[#2c2e31] rounded-lg px-4 py-3">
+              <button onClick={() => setSound(!sound)} className={`hover:text-[#d1d1d1] transition-colors ${sound ? "text-[#e2b714]" : ""}`} title="Toggle sound">
                 {sound ? "🔊" : "🔇"}
               </button>
             </div>
 
           </div>
         </header>
+      </div>
 
-        <div className="relative">
-          <div
-            id="test"
-            className="mx-auto text-2xl leading-relaxed font-mono select-none"
-          >
+      {/* 2. MIDDLE TEST AREA (flex-1 pushes this to the exact vertical center) */}
+      <div className="flex-1 flex items-center justify-center w-full">
+        <div className="w-full px-6 md:px-[8vw] relative">
+          <div id="test" className="mx-auto select-none">
+
             {!isTestFinished && mode === "quote" && currentQuote ? (
               <div className="text-center">
                 <div className="text-xl mb-4 text-[#d1d1d1]">
                   {currentQuote.text.split("").map((letter, idx) => {
                     let letterClass = "";
-                    if (idx < currentInput.length) {
-                      letterClass = currentInput[idx] === letter ? "correct" : "incorrect";
-                    } else if (idx === currentInput.length) {
-                      letterClass = "active";
-                    }
-                    return (
-                      <span key={idx} className={`letter ${letterClass}`}>
-                        {letter === " " ? "\u00A0" : letter}
-                      </span>
-                    );
+                    if (idx < currentInput.length) letterClass = currentInput[idx] === letter ? "correct" : "incorrect";
+                    else if (idx === currentInput.length) letterClass = "active";
+                    return <span key={idx} className={`letter ${letterClass}`}>{letter === " " ? "\u00A0" : letter}</span>;
                   })}
                 </div>
                 <div className="text-sm text-[#646566]">— {currentQuote.author}</div>
               </div>
             ) : !isTestFinished && visibleWords.length > 0 ? (
-              <div>
-                {visibleWords.slice(startWordIndex, endWordIndex).map((word, idx) => {
-                  const actualIdx = startWordIndex + idx;
-                  return (
-                    <span key={actualIdx} className="word">
+              /* --- NEW 3-LINE WRAPPER LOGIC --- */
+              <div id="test-wrapper">
+                <div id="test-inner" style={{ transform: `translateY(-${translateY}rem)` }}>
+                  {visibleWords.map((word, idx) => (
+                    <span
+                      key={idx}
+                      className="word"
+                      ref={el => { if (el) wordRefs.current[idx] = el; }}
+                    >
                       {word.split("").map((letter, letterIdx) => (
                         <span
                           key={letterIdx}
-                          className={`letter ${getLetterClass(actualIdx, letterIdx, letter, word)} ${isExtraLetter(actualIdx, letterIdx, word) ? "extra" : ""}`}
+                          className={`letter ${getLetterClass(idx, letterIdx, letter, word)} ${isExtraLetter(idx, letterIdx, word) ? "extra" : ""}`}
                         >
                           {letter}
                         </span>
                       ))}
                     </span>
-                  );
-                })}
+                  ))}
+                </div>
               </div>
             ) : isTestFinished && result ? (
               <div id="result" className="text-center py-12">
                 <div className="text-6xl font-bold mb-2 text-[#e2b714]">{result.wpm}</div>
                 <div className="text-lg text-[#646566] mb-8">wpm</div>
                 <div className="flex justify-center gap-2 mb-8">
-                  <div className="stat">
-                    <div className="stat-value text-[#e2b714]">{result.rawWpm}</div>
-                    <div className="stat-label">raw</div>
-                  </div>
-                  <div className="stat">
-                    <div className="stat-value text-[#e2b714]">{result.accuracy}%</div>
-                    <div className="stat-label">accuracy</div>
-                  </div>
-                  <div className="stat">
-                    <div className="stat-value text-[#e2b714]">{result.characters}</div>
-                    <div className="stat-label">chars</div>
-                  </div>
-                  <div className="stat">
-                    <div className="stat-value text-[#e2b714]">{result.correctChars}</div>
-                    <div className="stat-label">correct</div>
-                  </div>
-                  <div className="stat">
-                    <div className="stat-value text-[#e2b714]">{result.incorrectChars}</div>
-                    <div className="stat-label">incorrect</div>
-                  </div>
+                  <div className="stat"><div className="stat-value text-[#e2b714]">{result.rawWpm}</div><div className="stat-label">raw</div></div>
+                  <div className="stat"><div className="stat-value text-[#e2b714]">{result.accuracy}%</div><div className="stat-label">accuracy</div></div>
+                  <div className="stat"><div className="stat-value text-[#e2b714]">{result.characters}</div><div className="stat-label">chars</div></div>
+                  <div className="stat"><div className="stat-value text-[#e2b714]">{result.correctChars}</div><div className="stat-label">correct</div></div>
+                  <div className="stat"><div className="stat-value text-[#e2b714]">{result.incorrectChars}</div><div className="stat-label">incorrect</div></div>
                 </div>
                 <div className="flex justify-center gap-4 text-sm text-[#646566]">
                   <div><span className="text-[#e2b714]">+</span> {result.extraChars} extra</div>
                   <div><span className="text-[#e2b714]">-</span> {result.missedChars} missed</div>
                   <div>time: <span className="text-[#e2b714]">{result.time}s</span></div>
                 </div>
-                <button
-                  onClick={handleRestart}
-                  className="mt-8 px-6 py-2 bg-[#e2b714] text-[#323437] rounded-md font-medium hover:bg-[#d4a813] transition-colors shadow-sm"
-                >
-                  restart
-                </button>
+                <button onClick={handleRestart} className="mt-8 px-6 py-2 bg-[#e2b714] text-[#323437] rounded-md font-medium hover:bg-[#d4a813] transition-colors shadow-sm">restart</button>
               </div>
             ) : (
-              <div className="text-center text-[#646566] text-xl">
-                Start typing to begin the test
-              </div>
+              <div className="text-center text-[#646566] text-xl">Start typing to begin the test</div>
             )}
           </div>
         </div>
+      </div>
 
+      {/* 3. BOTTOM STATS */}
+      <div className="w-full px-6 md:px-[8vw] pb-6">
         <div className="flex justify-between items-center mt-6 text-sm text-[#646566]">
           <div>
             {isTestActive && !isPaused && mode === "time" && (
-              <span>
-                {customTime ? `${timer} / ${customTime}` : `${timer} / ${timeMode}`}
-              </span>
+              <span>{customTime ? `${timer} / ${customTime}` : `${timer} / ${timeMode}`}</span>
             )}
             {isTestActive && !isPaused && mode === "words" && (
-              <span>
-                {currentWordIndex} / {words.length}
-              </span>
+              <span>{currentWordIndex} / {words.length}</span>
             )}
           </div>
           <div>

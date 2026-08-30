@@ -6,17 +6,16 @@
   --color-sub: #646669;
   --color-main: #d1d0c2;
   --color-caret: #e2b714;
-  
+
   /* Map to Tailwind v4 theme variables */
   --color-background: var(--color-bg);
   --color-foreground: var(--color-sub);
-  
+
   /* Typing States */
-  /* Note: MonkeyType uses the main text color for correct text, NOT green */
-  --color-correct: var(--color-main); 
+  --color-correct: var(--color-main);
   --color-incorrect: #ca4754;
   --color-extra: #7e2a33;
-  
+
   /* Fonts */
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
@@ -34,19 +33,35 @@ body {
 /* --- TYPING AREA STYLES --- */
 
 #test {
-  max-width: 1000px;
+  max-width: 100%;
   width: 100%;
   user-select: none;
   font-family: var(--font-mono);
+  font-size: 2.5rem; /* Large MonkeyType font size */
+  line-height: 3.5rem; /* Fixed line height for exact calculations */
 }
 
-#test .word {
+/* The outer wrapper that clips the overflow to exactly 3 lines */
+#test-wrapper {
+  height: 10.5rem; /* Exactly 3 lines (3 * 3.5rem) */
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+}
+
+/* The inner wrapper that holds the words and moves up when lines hide */
+#test-inner {
+  display: flex;
+  flex-wrap: wrap;
+  transition: transform 0.2s ease-out; /* Smooth scrolling effect */
+}
+
+#test-inner .word {
   display: inline-block;
-  margin: 0 0.35rem;
+  margin: 0 0.6rem;
   padding: 0;
   border-radius: 0;
-  /* Crucial: prevents words from breaking to the next line mid-word */
-  white-space: nowrap; 
+  white-space: nowrap;
 }
 
 #test .letter {
@@ -57,10 +72,10 @@ body {
 
 #test .letter.active {
   border-left: 2px solid var(--color-caret);
-  margin-left: -2px; /* Prevents layout shift when caret appears */
+  margin-left: -2px; 
   padding-left: 2px;
   animation: blink 1s step-end infinite;
-  box-shadow: 0 0 8px -2px var(--color-caret); /* Subtle caret glow */
+  box-shadow: 0 0 8px -2px var(--color-caret); 
 }
 
 #test .letter.correct {
@@ -69,7 +84,6 @@ body {
 
 #test .letter.incorrect {
   color: var(--color-incorrect);
-  /* MonkeyType underlines errors */
   text-decoration: underline;
   text-decoration-color: var(--color-incorrect);
   text-underline-offset: 4px;
@@ -86,7 +100,6 @@ body {
 }
 
 /* --- RESULTS STYLES --- */
-
 #result .stat {
   display: inline-flex;
   flex-direction: column;
@@ -98,7 +111,7 @@ body {
   font-size: 3rem;
   font-weight: 700;
   line-height: 1;
-  color: var(--color-caret); /* Makes the WPM/Stats pop */
+  color: var(--color-caret);
 }
 
 #result .stat .stat-label {
@@ -110,19 +123,17 @@ body {
 }
 
 /* --- UI CLEANUP --- */
-
-/* Hide the ugly default up/down arrows on the custom time/word inputs */
 input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
+
 input[type="number"] {
   -moz-appearance: textfield;
   appearance: textfield;
 }
 
-/* Remove default blue focus outlines for a cleaner minimalist UI */
 *:focus {
   outline: none;
 }
