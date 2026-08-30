@@ -73,7 +73,7 @@ export default function Home() {
       osc.start();
       gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.05);
       osc.stop(ctx.currentTime + 0.05);
-    } catch {}
+    } catch { }
   }, [sound]);
 
   const generateWords = useCallback((count: number): string[] => {
@@ -316,28 +316,18 @@ export default function Home() {
   }, [isTestActive, isTestFinished, isPaused, pauseTest]);
 
   useEffect(() => {
-    const el = testContainerRef.current;
-    if (!el) return;
-
-    const handleMouseLeave = () => {
+    const handleMouseMove = () => {
+      // Only pause if the test is active, not finished, and not already paused
       if (isTestActive && !isTestFinished && !isPaused) {
         pauseTest();
       }
     };
 
-    const handleMouseEnter = () => {
-      if (isPaused && isTestActive && !isTestFinished) {
-        resumeTest();
-      }
-    };
-
-    el.addEventListener("mouseleave", handleMouseLeave);
-    el.addEventListener("mouseenter", handleMouseEnter);
+    window.addEventListener("mousemove", handleMouseMove);
     return () => {
-      el.removeEventListener("mouseleave", handleMouseLeave);
-      el.removeEventListener("mouseenter", handleMouseEnter);
+      window.removeEventListener("mousemove", handleMouseMove);
     };
-  }, [isTestActive, isTestFinished, isPaused, pauseTest, resumeTest]);
+  }, [isTestActive, isTestFinished, isPaused, pauseTest]);
 
   const getLetterClass = (wordIdx: number, letterIdx: number, letter: string, targetWord?: string): string => {
     const target = targetWord ?? words[wordIdx] ?? "";
@@ -391,129 +381,131 @@ export default function Home() {
   return (
     <main className="min-h-screen flex flex-col items-center bg-[#323437] text-[#d1d1d1]">
       <div className="w-full max-w-5xl px-4 py-6">
-        <header className="flex justify-between items-start mb-8">
-          <div className="flex gap-4">
-            <div className="text-center">
-              <div className="text-xs text-[#646566] uppercase tracking-wider mb-1">punctuation</div>
+        <header className="flex justify-center items-center mb-10 text-[#646566] text-sm font-medium">
+          <div className="flex items-center gap-8">
+
+            {/* LEFT: Punctuation & Numbers */}
+            <div className="flex gap-6 items-center">
               <button
                 onClick={() => setPunctuation(!punctuation)}
-                className={`w-12 h-6 rounded-full transition-all duration-200 ${
-                  punctuation ? "bg-[#e2b714] shadow-[0_0_8px_rgba(226,183,20,0.4)]" : "bg-[#3c3e41]"
-                }`}
+                className={`flex items-center gap-2 hover:text-[#d1d1d1] transition-colors ${punctuation ? "text-[#e2b714]" : ""
+                  }`}
+                title="Toggle punctuation"
               >
-                <div className={`w-5 h-5 bg-white rounded-full transition-transform duration-200 shadow-sm ${
-                  punctuation ? "translate-x-6" : "translate-x-0.5"
-                }`} />
+                <span className="text-lg">@</span>
+                <span className="hidden sm:inline">punctuation</span>
               </button>
-            </div>
-            <div className="text-center">
-              <div className="text-xs text-[#646566] uppercase tracking-wider mb-1">numbers</div>
               <button
                 onClick={() => setNumbers(!numbers)}
-                className={`w-12 h-6 rounded-full transition-all duration-200 ${
-                  numbers ? "bg-[#e2b714] shadow-[0_0_8px_rgba(226,183,20,0.4)]" : "bg-[#3c3e41]"
-                }`}
+                className={`flex items-center gap-2 hover:text-[#d1d1d1] transition-colors ${numbers ? "text-[#e2b714]" : ""
+                  }`}
+                title="Toggle numbers"
               >
-                <div className={`w-5 h-5 bg-white rounded-full transition-transform duration-200 shadow-sm ${
-                  numbers ? "translate-x-6" : "translate-x-0.5"
-                }`} />
+                <span className="text-lg">#</span>
+                <span className="hidden sm:inline">numbers</span>
               </button>
             </div>
-          </div>
 
-          <nav className="flex gap-1 bg-[#2c2e31] p-1 rounded-lg">
-            {(["time", "words", "quote", "zen", "custom"] as Mode[]).map(m => (
+            <div className="h-5 w-px bg-[#4a4b4e]"></div>
+
+            {/* MIDDLE: Modes */}
+            <nav className="flex gap-6 items-center">
+              {(["time", "words", "quote", "zen", "custom"] as Mode[]).map((m) => (
+                <button
+                  key={m}
+                  onClick={() => setMode(m)}
+                  className={`hover:text-[#d1d1d1] transition-colors ${mode === m ? "text-[#e2b714]" : ""
+                    }`}
+                >
+                  {m}
+                </button>
+              ))}
+            </nav>
+
+            <div className="h-5 w-px bg-[#4a4b4e]"></div>
+
+            {/* RIGHT: Time/Word Options & Custom Input */}
+            <div className="flex gap-5 items-center">
+              {mode === "time" && (
+                <>
+                  {TIME_OPTIONS.map((t) => (
+                    <button
+                      key={t}
+                      onClick={() => { setTimeMode(t); setCustomTime(""); }}
+                      className={`hover:text-[#d1d1d1] transition-colors ${timeMode === t && !customTime ? "text-[#e2b714]" : ""
+                        }`}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs opacity-50">⚙️</span>
+                    <input
+                      type="number"
+                      value={customTime}
+                      onChange={(e) => setCustomTime(e.target.value)}
+                      placeholder="custom"
+                      className="w-16 bg-transparent border-b border-[#4a4b4e] focus:border-[#e2b714] focus:outline-none transition-colors text-right"
+                    />
+                  </div>
+                </>
+              )}
+
+              {mode === "words" && (
+                <>
+                  {WORD_OPTIONS.map((w) => (
+                    <button
+                      key={w}
+                      onClick={() => { setWordMode(w); setCustomWords(""); }}
+                      className={`hover:text-[#d1d1d1] transition-colors ${wordMode === w && !customWords ? "text-[#e2b714]" : ""
+                        }`}
+                    >
+                      {w}
+                    </button>
+                  ))}
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs opacity-50">⚙️</span>
+                    <input
+                      type="number"
+                      value={customWords}
+                      onChange={(e) => setCustomWords(e.target.value)}
+                      placeholder="custom"
+                      className="w-16 bg-transparent border-b border-[#4a4b4e] focus:border-[#e2b714] focus:outline-none transition-colors text-right"
+                    />
+                  </div>
+                </>
+              )}
+
+              {mode === "quote" && (
+                <>
+                  {QUOTE_OPTIONS.map((q) => (
+                    <button
+                      key={q}
+                      onClick={() => setQuoteMode(q)}
+                      className={`hover:text-[#d1d1d1] transition-colors ${quoteMode === q ? "text-[#e2b714]" : ""
+                        }`}
+                    >
+                      {q}
+                    </button>
+                  ))}
+                </>
+              )}
+            </div>
+
+            <div className="h-5 w-px bg-[#4a4b4e]"></div>
+
+            {/* FAR RIGHT: Sound */}
+            <div className="flex items-center gap-4">
               <button
-                key={m}
-                onClick={() => setMode(m)}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
-                  mode === m
-                    ? "bg-[#e2b714] text-[#323437] shadow-sm"
-                    : "text-[#646566] hover:text-[#d1d1d1]"
-                }`}
+                onClick={() => setSound(!sound)}
+                className={`hover:text-[#d1d1d1] transition-colors ${sound ? "text-[#e2b714]" : ""
+                  }`}
+                title="Toggle sound"
               >
-                {m}
+                {sound ? "🔊" : "🔇"}
               </button>
-            ))}
-          </nav>
+            </div>
 
-          <div className="flex gap-2 items-center">
-            <button
-              onClick={() => setSound(!sound)}
-              className={`px-3 py-1.5 rounded-md text-sm transition-all duration-200 ${
-                sound
-                  ? "bg-[#e2b714] text-[#323437]"
-                  : "text-[#646566] hover:text-[#d1d1d1]"
-              }`}
-              title="Toggle sound"
-            >
-              {sound ? "🔊" : "🔇"}
-            </button>
-            {mode === "time" && (
-              <>
-                {TIME_OPTIONS.map(t => (
-                  <button
-                    key={t}
-                    onClick={() => { setTimeMode(t); setCustomTime(""); }}
-                    className={`px-3 py-1.5 rounded-md text-sm transition-all duration-200 ${
-                      timeMode === t && !customTime
-                        ? "bg-[#e2b714] text-[#323437] shadow-sm"
-                        : "text-[#646566] hover:text-[#d1d1d1]"
-                    }`}
-                  >
-                    {t}
-                  </button>
-                ))}
-                <input
-                  type="number"
-                  value={customTime}
-                  onChange={(e) => setCustomTime(e.target.value)}
-                  placeholder="custom"
-                  className="w-16 px-2 py-1.5 rounded-md text-sm bg-[#2c2e31] text-[#d1d1d1] border border-[#3c3e41] focus:outline-none focus:border-[#e2b714] transition-colors"
-                />
-              </>
-            )}
-            {mode === "words" && (
-              <>
-                {WORD_OPTIONS.map(w => (
-                  <button
-                    key={w}
-                    onClick={() => { setWordMode(w); setCustomWords(""); }}
-                    className={`px-3 py-1.5 rounded-md text-sm transition-all duration-200 ${
-                      wordMode === w && !customWords
-                        ? "bg-[#e2b714] text-[#323437] shadow-sm"
-                        : "text-[#646566] hover:text-[#d1d1d1]"
-                    }`}
-                  >
-                    {w}
-                  </button>
-                ))}
-                <input
-                  type="number"
-                  value={customWords}
-                  onChange={(e) => setCustomWords(e.target.value)}
-                  placeholder="custom"
-                  className="w-16 px-2 py-1.5 rounded-md text-sm bg-[#2c2e31] text-[#d1d1d1] border border-[#3c3e41] focus:outline-none focus:border-[#e2b714] transition-colors"
-                />
-              </>
-            )}
-            {mode === "quote" && (
-              <>
-                {QUOTE_OPTIONS.map(q => (
-                  <button
-                    key={q}
-                    onClick={() => setQuoteMode(q)}
-                    className={`px-3 py-1.5 rounded-md text-sm transition-all duration-200 ${
-                      quoteMode === q
-                        ? "bg-[#e2b714] text-[#323437] shadow-sm"
-                        : "text-[#646566] hover:text-[#d1d1d1]"
-                    }`}
-                  >
-                    {q}
-                  </button>
-                ))}
-              </>
-            )}
           </div>
         </header>
 
@@ -603,15 +595,6 @@ export default function Home() {
               </div>
             )}
           </div>
-
-          {isPaused && (
-            <div className="absolute inset-0 flex items-center justify-center bg-[#323437]/80 backdrop-blur-sm rounded-lg">
-              <div className="text-center">
-                <div className="text-4xl font-bold text-[#e2b714] mb-4">Paused</div>
-                <div className="text-lg text-[#d1d1d1]">Click or press any key to resume</div>
-              </div>
-            </div>
-          )}
         </div>
 
         <div className="flex justify-between items-center mt-6 text-sm text-[#646566]">

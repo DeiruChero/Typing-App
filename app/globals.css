@@ -1,48 +1,66 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  /* MonkeyType "Serika Dark" Exact Color Palette */
+  --color-bg: #323437;
+  --color-sub: #646669;
+  --color-main: #d1d0c2;
+  --color-caret: #e2b714;
+  
+  /* Map to Tailwind v4 theme variables */
+  --color-background: var(--color-bg);
+  --color-foreground: var(--color-sub);
+  
+  /* Typing States */
+  /* Note: MonkeyType uses the main text color for correct text, NOT green */
+  --color-correct: var(--color-main); 
+  --color-incorrect: #ca4754;
+  --color-extra: #7e2a33;
+  
+  /* Fonts */
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --font-roboto: var(--font-roboto);
-  --color-correct: #98c379;
-  --color-incorrect: #e06c75;
-  --color-extra: #e06c75;
-  --color-caret: #e2b714;
-  --color-sub: #646566;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background-color: var(--color-bg);
+  color: var(--color-sub);
   font-family: var(--font-roboto), var(--font-geist-sans), sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
+
+/* --- TYPING AREA STYLES --- */
 
 #test {
   max-width: 1000px;
   width: 100%;
   user-select: none;
+  font-family: var(--font-mono);
 }
 
 #test .word {
-  display: inline-flex;
-  margin: 0.3rem 0.5rem 0.3rem 0;
-  padding: 0.25rem 0.25rem;
-  border-radius: 4px;
-  line-height: 1.5rem;
+  display: inline-block;
+  margin: 0 0.35rem;
+  padding: 0;
+  border-radius: 0;
+  /* Crucial: prevents words from breaking to the next line mid-word */
+  white-space: nowrap; 
 }
 
 #test .letter {
   position: relative;
-  padding: 0.125rem 0;
-  border-left: 2px solid transparent;
-  transition: color 0.05s, border-color 0.05s;
-  margin-left: -1px;
+  color: var(--color-sub); /* Default untyped state */
+  transition: color 0.05s ease-out;
 }
 
 #test .letter.active {
-  border-left-color: var(--color-caret);
+  border-left: 2px solid var(--color-caret);
+  margin-left: -2px; /* Prevents layout shift when caret appears */
+  padding-left: 2px;
+  animation: blink 1s step-end infinite;
+  box-shadow: 0 0 8px -2px var(--color-caret); /* Subtle caret glow */
 }
 
 #test .letter.correct {
@@ -51,11 +69,23 @@ body {
 
 #test .letter.incorrect {
   color: var(--color-incorrect);
+  /* MonkeyType underlines errors */
+  text-decoration: underline;
+  text-decoration-color: var(--color-incorrect);
+  text-underline-offset: 4px;
 }
 
 #test .letter.extra {
   color: var(--color-extra);
 }
+
+/* MonkeyType style snapping blink */
+@keyframes blink {
+  0%, 100% { border-color: var(--color-caret); }
+  50% { border-color: transparent; }
+}
+
+/* --- RESULTS STYLES --- */
 
 #result .stat {
   display: inline-flex;
@@ -68,14 +98,33 @@ body {
   font-size: 3rem;
   font-weight: 700;
   line-height: 1;
+  color: var(--color-caret); /* Makes the WPM/Stats pop */
 }
 
 #result .stat .stat-label {
   font-size: 0.875rem;
-  color: var(--sub-color);
+  color: var(--color-sub);
   margin-top: 0.5rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+}
+
+/* --- UI CLEANUP --- */
+
+/* Hide the ugly default up/down arrows on the custom time/word inputs */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* Remove default blue focus outlines for a cleaner minimalist UI */
+*:focus {
+  outline: none;
 }
 
 #configModal {
