@@ -467,7 +467,7 @@ export default function Home() {
                     <button key={t} onClick={() => { setTimeMode(t); setCustomTime(""); }} className={`hover:text-[#d1d1d1] transition-colors ${timeMode === t && !customTime ? "text-[#e2b714]" : ""}`}>{t}</button>
                   ))}
                   <div className="flex items-center gap-1">
-                    <span className="text-xs opacity-50">⚙️</span>
+                    <span className="text-xs opacity-50"><i className="fas fa-tools"></i></span>
                     <input type="number" value={customTime} onChange={(e) => setCustomTime(e.target.value)} placeholder="custom" className="w-16 bg-transparent border-b border-[#4a4b4e] focus:border-[#e2b714] focus:outline-none transition-colors text-right" />
                   </div>
                 </>
