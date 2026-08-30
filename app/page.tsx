@@ -522,8 +522,13 @@ export default function Home() {
               </div>
             ) : !isTestFinished && visibleWords.length > 0 ? (
               /* --- NEW 3-LINE WRAPPER LOGIC --- */
-              <div id="test-wrapper" key={`test-${contentVersion}`} className="test-fade">
-                <div id="test-inner" style={{ transform: `translateY(-${translateY}rem)` }}>
+              <div id="test-wrapper">
+                <div
+                  id="test-inner"
+                  key={`text-${contentVersion}`}
+                  className="words-fade"
+                  style={{ transform: `translateY(-${translateY}rem)` }}
+                >
                   {visibleWords.map((word, idx) => (
                     <span
                       key={idx}

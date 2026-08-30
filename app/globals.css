@@ -155,3 +155,22 @@ input[type="number"] {
 #configModal {
   backdrop-filter: blur(4px);
 }
+
+/* Smooth fade & blur transition when words regenerate */
+.words-fade {
+  /* Increased duration to 0.45s and used a premium smooth ease-out curve */
+  animation: wordsFade 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+@keyframes wordsFade {
+  0% {
+    opacity: 0;
+    filter: blur(8px);
+    /* Slightly more blur makes a slower fade look much smoother */
+  }
+
+  100% {
+    opacity: 1;
+    filter: blur(0);
+  }
+}
