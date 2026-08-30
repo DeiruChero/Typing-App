@@ -20,7 +20,7 @@ const roboto = Roboto({
 
 export const metadata: Metadata = {
   title: "TypeFlow - Typing Practice",
-  description: "A minimalist typing practice app to improve your typing speed and accuracy.",
+  description: "A minimalist typing practice app to improve your typing speed and accuracy."
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

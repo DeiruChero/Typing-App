@@ -428,6 +428,8 @@ export default function Home() {
     return () => window.removeEventListener("resize", calculateLineShift);
   }, [calculateLineShift]);
 
+  // page.tsx
+
   useEffect(() => {
     const t = THEMES.find(x => x.name === theme) ?? THEMES[0];
     const s = document.documentElement.style;
@@ -440,6 +442,37 @@ export default function Home() {
     s.setProperty("--tf-error-extra", t.errorExtra);
     s.setProperty("--tf-line", t.line);
     localStorage.setItem("typeflow-theme", t.name);
+
+    // ✅ IMPROVED FAVICON UPDATE
+    const updateFavicon = () => {
+      // ✅ ADDED: A subtle glow filter to make the text pop and look less flat/dull
+      const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+      <defs>
+        <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-color="${t.caret}" flood-opacity="0.5"/>
+        </filter>
+      </defs>
+      <rect width="64" height="64" rx="14" fill="${t.bg}"/>
+      <text x="32" y="44" font-family="system-ui, -apple-system, sans-serif" font-size="48" fill="${t.caret}" text-anchor="middle" filter="url(#glow)">tf</text>
+    </svg>
+  `;
+
+      const dataUri = `data:image/svg+xml,${encodeURIComponent(svg)}`;
+
+      const oldLink = document.querySelector("link[rel*='icon']");
+      if (oldLink) {
+        oldLink.remove();
+      }
+
+      const newLink = document.createElement('link');
+      newLink.rel = 'icon';
+      newLink.type = 'image/svg+xml';
+      newLink.href = dataUri;
+      document.head.appendChild(newLink);
+    };
+
+    updateFavicon();
   }, [theme]);
 
   const isExtraLetter = (wordIdx: number, letterIdx: number, targetWord?: string): boolean => {
@@ -558,8 +591,8 @@ export default function Home() {
             {mode === "time" && targetTime > 0 && (
               <div
                 className={`absolute left-6 md:left-[8vw] -top-12 text-caret font-mono text-3xl select-none transition-all duration-300 ease-out ${isTestActive && !isPaused
-                    ? "opacity-100 translate-y-0"
-                    : "opacity-0 -translate-y-2"
+                  ? "opacity-100 translate-y-0"
+                  : "opacity-0 -translate-y-2"
                   }`}
               >
                 {formatTime(Math.max(0, targetTime - timer))}
