@@ -457,6 +457,16 @@ export default function Home() {
     initTest();
   };
 
+  // The total time for the test (preset or custom)
+  const targetTime = customTime ? parseInt(customTime) || 0 : timeMode;
+
+  // Formats seconds into "m:ss" like monkeytype (e.g. 37:06)
+  const formatTime = (totalSeconds: number): string => {
+    const m = Math.floor(totalSeconds / 60);
+    const s = totalSeconds % 60;
+    return `${m}:${s.toString().padStart(2, "0")}`;
+  };
+
   const visibleWords = mode === "quote" && currentQuote ? currentQuote.text.split(" ") : words;
   const startWordIndex = Math.max(0, currentWordIndex - 5);
   const endWordIndex = Math.min(visibleWords.length, startWordIndex + 20);
@@ -544,6 +554,17 @@ export default function Home() {
         {/* 2. MIDDLE TEST AREA (flex-1 pushes this to the exact vertical center) */}
         <div className="flex-1 flex items-center justify-center w-full">
           <div className="w-full px-6 md:px-[8vw] relative">
+            {/* LIVE COUNTDOWN TIMER (monkeytype style, top-left of the words) */}
+            {mode === "time" && targetTime > 0 && (
+              <div
+                className={`absolute left-6 md:left-[8vw] -top-12 text-caret font-mono text-3xl select-none transition-all duration-300 ease-out ${isTestActive && !isPaused
+                    ? "opacity-100 translate-y-0"
+                    : "opacity-0 -translate-y-2"
+                  }`}
+              >
+                {formatTime(Math.max(0, targetTime - timer))}
+              </div>
+            )}
             <div id="test" className="mx-auto select-none">
 
               {!isTestFinished && mode === "quote" && currentQuote ? (
@@ -622,9 +643,6 @@ export default function Home() {
           </div>
           <div className="flex justify-between items-center mt-6 text-sm text-sub">
             <div>
-              {isTestActive && !isPaused && mode === "time" && (
-                <span>{customTime ? `${timer} / ${customTime}` : `${timer} / ${timeMode}`}</span>
-              )}
               {isTestActive && !isPaused && mode === "words" && (
                 <span>{currentWordIndex} / {words.length}</span>
               )}
