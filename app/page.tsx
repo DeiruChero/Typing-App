@@ -240,6 +240,19 @@ export default function Home() {
   }, [isTestFinished, startTest]);
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    // Restart the test with Escape at any time
+    if (e.key === "Escape") {
+      const target = e.target as HTMLElement;
+      // If the user is typing inside the "custom" input box, just exit the input instead of restarting
+      if (target.tagName === "INPUT") {
+        target.blur();
+        return;
+      }
+      e.preventDefault();
+      initTest();
+      return;
+    }
+
     if (isTestFinished) {
       if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
         initTest();
