@@ -261,10 +261,12 @@ export default function Home() {
     }
 
     if (isPaused) {
-      if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
-        resumeTest();
+      // If a non-typing key (like Shift, F5, etc.) is pressed while paused, ignore it
+      if (!(e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey)) {
+        return;
       }
-      return;
+      resumeTest();
+      // ⚠️ No "return" here! We fall through so this same keypress also gets typed.
     }
 
     if (e.ctrlKey || e.metaKey || e.altKey) return;
