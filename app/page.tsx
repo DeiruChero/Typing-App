@@ -265,9 +265,6 @@ export default function Home() {
     }
 
     if (isTestFinished) {
-      if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
-        initTest();
-      }
       return;
     }
 
