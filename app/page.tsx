@@ -37,6 +37,7 @@ export default function Home() {
   const [currentInput, setCurrentInput] = useState<string>("");
   const [timer, setTimer] = useState<number>(0);
   const [liveWpm, setLiveWpm] = useState<number>(0);
+  const [contentVersion, setContentVersion] = useState<number>(0);
   const [result, setResult] = useState<{
     wpm: number;
     rawWpm: number;
@@ -121,6 +122,9 @@ export default function Home() {
     setCurrentInput("");
     setCurrentWordIndex(0);
     setCurrentLetterIndex(0);
+    setContentVersion(prev => prev + 1);
+    setTranslateY(0);
+    wordRefs.current = [];
 
     if (mode === "time") {
       setWords(generateWords(100));
@@ -518,7 +522,7 @@ export default function Home() {
               </div>
             ) : !isTestFinished && visibleWords.length > 0 ? (
               /* --- NEW 3-LINE WRAPPER LOGIC --- */
-              <div id="test-wrapper">
+              <div id="test-wrapper" key={`test-${contentVersion}`} className="test-fade">
                 <div id="test-inner" style={{ transform: `translateY(-${translateY}rem)` }}>
                   {visibleWords.map((word, idx) => (
                     <span
