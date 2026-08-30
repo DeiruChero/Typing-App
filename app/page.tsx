@@ -387,9 +387,9 @@ export default function Home() {
     // Calculate which line index (0, 1, 2, 3...) the current word is on
     const lineIndex = Math.round((currentWordEl.offsetTop - firstWordEl.offsetTop) / lineHeightPx);
 
-    // If it's on the 4th line (index 3) or below, shift the container up
-    if (lineIndex >= 3) {
-      const shiftLines = lineIndex - 2; // Keep it on the 3rd visual line
+    // If it's on the 3rd line (index 2) or below, shift the container up
+    if (lineIndex >= 2) {
+      const shiftLines = lineIndex - 1; // Keep it on the middle visual line
       setTranslateY(shiftLines * 3.5); // 3.5rem per line
     } else {
       setTranslateY(0);
