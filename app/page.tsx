@@ -78,11 +78,15 @@ export default function Home() {
   const [timer, setTimer] = useState<number>(0);
   const [liveWpm, setLiveWpm] = useState<number>(0);
   const [contentVersion, setContentVersion] = useState<number>(0);
-  const [theme, setTheme] = useState<string>(() =>
+  const [savedTheme, setSavedTheme] = useState<string>(() =>
     typeof window !== "undefined"
       ? localStorage.getItem("typeflow-theme") || "serika dark"
       : "serika dark"
   );
+  const [previewTheme, setPreviewTheme] = useState<string | null>(null);
+
+  // The theme actually used for CSS variables
+  const activeTheme = previewTheme ?? savedTheme;
   const [showThemeModal, setShowThemeModal] = useState(false);
   const [themeSearch, setThemeSearch] = useState("");
   const [result, setResult] = useState<{
@@ -470,7 +474,7 @@ export default function Home() {
   // page.tsx
 
   useEffect(() => {
-    const t = THEMES.find(x => x.name === theme) ?? THEMES[0];
+    const t = THEMES.find(x => x.name === activeTheme) ?? THEMES[0];
     const s = document.documentElement.style;
     s.setProperty("--tf-bg", t.bg);
     s.setProperty("--tf-sub-alt", t.subAlt);
@@ -480,7 +484,6 @@ export default function Home() {
     s.setProperty("--tf-error", t.error);
     s.setProperty("--tf-error-extra", t.errorExtra);
     s.setProperty("--tf-line", t.line);
-    localStorage.setItem("typeflow-theme", t.name);
 
     // ✅ IMPROVED FAVICON UPDATE
     const updateFavicon = () => {
@@ -512,7 +515,7 @@ export default function Home() {
     };
 
     updateFavicon();
-  }, [theme]);
+  }, [activeTheme]);
 
   // 💾 Save settings to localStorage whenever they change
   useEffect(() => {
@@ -528,6 +531,12 @@ export default function Home() {
       localStorage.setItem("typeflow-sound", sound.toString());
     }
   }, [mode, timeMode, wordMode, quoteMode, customTime, customWords, punctuation, numbers, sound]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("typeflow-theme", savedTheme);
+    }
+  }, [savedTheme]);
 
   const isExtraLetter = (wordIdx: number, letterIdx: number, targetWord?: string): boolean => {
     if (wordIdx !== currentWordIndex) return false;
@@ -800,7 +809,7 @@ export default function Home() {
             <div className="flex justify-end items-center gap-2 mt-3 text-xs text-sub">
               <i className="fas fa-palette text-caret"></i>
               <button onClick={() => setShowThemeModal(true)} className="hover:text-main transition-colors">
-                {theme}
+                {savedTheme}
               </button>
             </div>
           </div>
@@ -810,7 +819,7 @@ export default function Home() {
       {showThemeModal && (
         <div
           className="fixed inset-0 z-50 flex items-start justify-center pt-[12vh] bg-black/50"
-          onClick={() => setShowThemeModal(false)}
+          onClick={() => { setShowThemeModal(false); setPreviewTheme(null); }}
         >
           <div
             className="w-full max-w-2xl mx-4 bg-sub-alt rounded-lg shadow-2xl overflow-hidden"
@@ -830,12 +839,17 @@ export default function Home() {
               {THEMES.filter((t) => t.name.toLowerCase().includes(themeSearch.toLowerCase())).map((t) => (
                 <button
                   key={t.name}
-                  onClick={() => setTheme(t.name)}
-                  className={`w-full flex items-center justify-between px-5 py-2.5 font-mono text-sm transition-colors ${theme === t.name ? "bg-main text-bg" : "text-sub hover:text-main hover:bg-line/30"
-                    }`}
+                  onMouseEnter={() => setPreviewTheme(t.name)} // 🔥 Preview on hover
+                  onMouseLeave={() => setPreviewTheme(null)}    // 🔥 Revert if mouse leaves
+                  onClick={() => {
+                    setSavedTheme(t.name);    // 💾 Save permanently
+                    setPreviewTheme(null);    // Clear preview
+                    setShowThemeModal(false); // Close modal
+                  }}
+                  className={`w-full flex items-center justify-between px-5 py-2.5 font-mono text-sm transition-colors ${savedTheme === t.name ? "bg-main text-bg" : "text-sub hover:text-main hover:bg-line/30"}`}
                 >
                   <span className="flex items-center gap-3">
-                    {theme === t.name && <i className="fas fa-check"></i>}
+                    {activeTheme === t.name && <i className="fas fa-check"></i>}
                     {t.name}
                   </span>
                   <span className="flex gap-1.5">
