@@ -39,15 +39,33 @@ const Tip = ({
 );
 
 export default function Home() {
-  const [mode, setMode] = useState<Mode>("time");
-  const [timeMode, setTimeMode] = useState<number>(30);
-  const [wordMode, setWordMode] = useState<number>(25);
-  const [quoteMode, setQuoteMode] = useState<string>("all");
-  const [customTime, setCustomTime] = useState<string>("");
-  const [customWords, setCustomWords] = useState<string>("");
-  const [punctuation, setPunctuation] = useState<boolean>(false);
-  const [numbers, setNumbers] = useState<boolean>(false);
-  const [sound, setSound] = useState<boolean>(false);
+  const [mode, setMode] = useState<Mode>(() =>
+    typeof window !== "undefined" ? (localStorage.getItem("typeflow-mode") as Mode) || "time" : "time"
+  );
+  const [timeMode, setTimeMode] = useState<number>(() =>
+    typeof window !== "undefined" ? parseInt(localStorage.getItem("typeflow-timeMode") || "30", 10) : 30
+  );
+  const [wordMode, setWordMode] = useState<number>(() =>
+    typeof window !== "undefined" ? parseInt(localStorage.getItem("typeflow-wordMode") || "25", 10) : 25
+  );
+  const [quoteMode, setQuoteMode] = useState<string>(() =>
+    typeof window !== "undefined" ? localStorage.getItem("typeflow-quoteMode") || "all" : "all"
+  );
+  const [customTime, setCustomTime] = useState<string>(() =>
+    typeof window !== "undefined" ? localStorage.getItem("typeflow-customTime") || "" : ""
+  );
+  const [customWords, setCustomWords] = useState<string>(() =>
+    typeof window !== "undefined" ? localStorage.getItem("typeflow-customWords") || "" : ""
+  );
+  const [punctuation, setPunctuation] = useState<boolean>(() =>
+    typeof window !== "undefined" ? localStorage.getItem("typeflow-punctuation") === "true" : false
+  );
+  const [numbers, setNumbers] = useState<boolean>(() =>
+    typeof window !== "undefined" ? localStorage.getItem("typeflow-numbers") === "true" : false
+  );
+  const [sound, setSound] = useState<boolean>(() =>
+    typeof window !== "undefined" ? localStorage.getItem("typeflow-sound") === "true" : false
+  );
   const [isTestActive, setIsTestActive] = useState<boolean>(false);
   const [isTestFinished, setIsTestFinished] = useState<boolean>(false);
   const [isPaused, setIsPaused] = useState<boolean>(false);
@@ -495,6 +513,21 @@ export default function Home() {
 
     updateFavicon();
   }, [theme]);
+
+  // 💾 Save settings to localStorage whenever they change
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("typeflow-mode", mode);
+      localStorage.setItem("typeflow-timeMode", timeMode.toString());
+      localStorage.setItem("typeflow-wordMode", wordMode.toString());
+      localStorage.setItem("typeflow-quoteMode", quoteMode);
+      localStorage.setItem("typeflow-customTime", customTime);
+      localStorage.setItem("typeflow-customWords", customWords);
+      localStorage.setItem("typeflow-punctuation", punctuation.toString());
+      localStorage.setItem("typeflow-numbers", numbers.toString());
+      localStorage.setItem("typeflow-sound", sound.toString());
+    }
+  }, [mode, timeMode, wordMode, quoteMode, customTime, customWords, punctuation, numbers, sound]);
 
   const isExtraLetter = (wordIdx: number, letterIdx: number, targetWord?: string): boolean => {
     if (wordIdx !== currentWordIndex) return false;
